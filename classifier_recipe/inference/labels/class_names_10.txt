@@ -1,0 +1,10 @@
+Apple
+Carnivore
+Chicken
+Coffee
+Coin
+Mug
+Penguin
+Scarf
+Sheep
+Vase
