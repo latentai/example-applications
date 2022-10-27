@@ -15,10 +15,11 @@ int main(int argc, char *argv[]) {
   std::string model_binary{argv[1]};
   std::string img_path{argv[2]};
   std::string label_file_name{argv[3]};
+  std::string key_path = "";
 
   // Model Factory
   DLDevice device_t{kDLCUDA, 0}; // If running in CPU change to kDLCPU
-  LreModel model(model_binary, device_t);
+  LreModel model(model_binary,key_path, device_t);
 
   // Preprocessing
   cv::Mat image_input = cv::imread(img_path);
