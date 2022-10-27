@@ -1,9 +1,6 @@
 #include "yolov5_processors.hpp"
-// #include <sys/time.h>
 
 cv::Mat preprocess_yolov5(cv::Mat &ImageInput, float width, float height) {
-
-
   cv::resize(ImageInput, ImageInput, cv::Size(width, height));  // Resize
   cv::cvtColor(ImageInput, ImageInput, cv::COLOR_BGR2RGB);  // RGB Format required
   ImageInput.convertTo(ImageInput, CV_32FC3, 1.f / 255);  // Convert to float ranges 0-1
@@ -11,41 +8,117 @@ cv::Mat preprocess_yolov5(cv::Mat &ImageInput, float width, float height) {
   return ImageInput;
 }
 
-std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs) {
-
-  // struct timeval t0, t1, t2, t3;
+std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor*> &tvm_outputs) {
 
   std::vector<at::Tensor> dloutputs,result_output;
+
+  // Decoding
+  dloutputs = convert_to_atTensor(tvm_outputs);
+  reshape_heads(dloutputs);
+  auto decoded_results = decode(dloutputs);
+  auto scores = decoded_results[0];
+  auto pred_boxes_x1y1x2y2 = decoded_results[1];
+
+  // Drop Below Threshold
+  auto inds_scores = at::where(scores > 0.45);
+  pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({inds_scores[0]});
+  scores = scores.index({inds_scores[0],inds_scores[1]});
+
+  // NMS
+  auto result = vision::ops::nms(pred_boxes_x1y1x2y2,scores,0.45);
+
+  result_output.emplace_back(pred_boxes_x1y1x2y2.index({result}));
+  result_output.emplace_back(scores.index({result}));
+  result_output.emplace_back(inds_scores[1].index({result}));
+
+  return result_output;
+}
+
+std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs,  std::string image_path, float width, float height)
+{
+  std::vector<at::Tensor> dloutputs,result_output;
+
+  // Decoding
+  dloutputs = convert_to_atTensor(tvm_outputs);
+  reshape_heads(dloutputs);
+  auto decoded_results = decode(dloutputs);
+  auto scores = decoded_results[0];
+  auto pred_boxes_x1y1x2y2 = decoded_results[1];
+
+  // Drop Below Threshold
+  auto inds_scores = at::where(scores > 0.45);
+  pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({inds_scores[0]});
+  scores = scores.index({inds_scores[0],inds_scores[1]});
+
+  // NMS
+  auto result = vision::ops::nms(pred_boxes_x1y1x2y2,scores,0.45);
+
+  pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({result});
+  result_output.emplace_back(pred_boxes_x1y1x2y2);
+  result_output.emplace_back(scores.index({result}));
+  result_output.emplace_back(inds_scores[1].index({result}));
+
+  cv::Mat image_out = cv::imread(image_path);
+  cv::resize(image_out, image_out, cv::Size(width, height));  // Resize
+
+  for(int i = 0 ; i < pred_boxes_x1y1x2y2.sizes()[0] ; i++)
+  {
+    auto x1 = pred_boxes_x1y1x2y2[i][0].item<float>();
+    auto y1 = pred_boxes_x1y1x2y2[i][1].item<float>();
+    auto x2 = pred_boxes_x1y1x2y2[i][2].item<float>();
+    auto y2 = pred_boxes_x1y1x2y2[i][3].item<float>();
+
   
-  // gettimeofday(&t0, 0);
-  for (int i = 0; i < tvm_outputs.size() ; i++){
+    cv::rectangle(image_out,cv::Point(x1,y1),cv::Point(x2,y2),cv::Scalar(255,0,0),4,8,0); 
+  }
+
+
+  
+  image_path.replace(image_path.end()-4,image_path.end(),"op.jpg");
+  
+  std::cout << "op path " << image_path << std::endl;
+   
+  cv::imwrite(image_path,image_out);
+
+  // 
+
+
+  return result_output;
+
+}
+std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors)
+{
+  std::vector<at::Tensor> atTensors;
+  for (int i = 0; i < dLTensors.size() ; i++){
 
     DLManagedTensor* output = new DLManagedTensor{};
-    output->dl_tensor = *tvm_outputs[i];
+    output->dl_tensor = *dLTensors[i];
     output->deleter = &monly_deleter;
 
     auto op = at::fromDLPack(output);
-
-
-    if(i<3) // rehshape the Heads
-    {
-      auto dlTensorShape = op.sizes();
-      op = op.reshape({dlTensorShape[0],-1,dlTensorShape[4]});
-    }  
-    dloutputs.emplace_back(op);
+    atTensors.emplace_back(op);
   }
+  return atTensors;
+}
 
-  // gettimeofday(&t1, 0);
+void reshape_heads(std::vector<at::Tensor> &heads)
+{
+  for (int i = 0; i < 3 ; i++){
 
+    auto dlTensorShape = heads[i].sizes();
+    heads[i] = heads[i].reshape({dlTensorShape[0],-1,dlTensorShape[4]});
+  }
+}
 
+std::vector<at::Tensor> decode(std::vector<at::Tensor> &heads)
+{
+  std::vector<at::Tensor> decoded;
 
-  // Decoding 
-
-  auto pred_logits =  at::sigmoid(at::cat({ dloutputs[0],dloutputs[1],dloutputs[2] },1)[0]);
+  auto pred_logits =  at::sigmoid(at::cat({ heads[0],heads[1],heads[2]},1)[0]);
   auto scores = pred_logits.slice(1,5) * pred_logits.slice(1,4,5);
   
-  auto pred_wh = (pred_logits.slice(1,0,2) * 2 + dloutputs[3]) * dloutputs[4];
-  auto pred_xy = (pred_logits.slice(1,2,4) * 2).pow(2) * dloutputs[5] * 0.5;
+  auto pred_wh = (pred_logits.slice(1,0,2) * 2 + heads[3]) * heads[4];
+  auto pred_xy = (pred_logits.slice(1,2,4) * 2).pow(2) * heads[5] * 0.5;
 
   auto pred_wh_unbinded = pred_wh.unbind(-1);
   auto pred_xy_unbinded = pred_xy.unbind(-1);
@@ -55,35 +128,11 @@ std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs)
   auto x2 = pred_wh_unbinded[0] +  pred_xy_unbinded[0];
   auto y2 = pred_wh_unbinded[1] +  pred_xy_unbinded[1];
 
-
   auto pred_boxes_x1y1x2y2 = at::stack({x1,y1,x2,y2},-1);
 
-  // Drob boxes below Threshold 
+  decoded.emplace_back(scores);
+  decoded.emplace_back(pred_boxes_x1y1x2y2);
 
-  auto inds_scores = at::where(scores > 0.45);
-
-  pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({inds_scores[0]});
-  scores = scores.index({inds_scores[0],inds_scores[1]});
-
-  // gettimeofday(&t2, 0);
-
-  //NMS
-
-  auto result = vision::ops::nms(pred_boxes_x1y1x2y2,scores,0.45);
-
-  // gettimeofday(&t3, 0);
-
-
-  result_output.emplace_back(pred_boxes_x1y1x2y2.index({result}));
-  result_output.emplace_back(scores.index({result}));
-
-  // std::cout << std::setprecision(2) << std::fixed;
-  // std::cout << "Timing: " << (t1.tv_sec - t0.tv_sec) * 1000 + (t1.tv_usec - t0.tv_usec) / 1000.f << " ms copy to tensors" << std::endl;
-  // std::cout << "Timing: " << (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000.f << " ms decoding" << std::endl;
-  // std::cout << "Timing: " << (t3.tv_sec - t2.tv_sec) * 1000 + (t3.tv_usec - t2.tv_usec) / 1000.f << " ms nms" << std::endl;
-  
-  return result_output;
-
-
+  return decoded;
 }
 
