@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 #include <tvm/runtime/latentai/lre_model.hpp>
-#include "imagenet_torch_nchw_processors.hpp"
+#include "imagenet_processors.hpp"
 
 
 int main(int argc, char *argv[]) {
@@ -15,15 +15,27 @@ int main(int argc, char *argv[]) {
   std::string model_binary{argv[1]};
   std::string img_path{argv[2]};
   std::string label_file_name{argv[3]};
-  std::vector<unsigned char> key;
+  std::string key_path {argv[4]};
+
+
+  std::vector <unsigned char> key;
+  std::string password; 
+  
+  // Use LRE Cryption services to unlock the encrypted key
+  // Comment out next 3 lines if your model is not encrypted
+  std::cout << " Enter password to unlock key " << std::endl;
+  std::cin >> password;
+  key = unlock_key(password,key_path);
+  
 
   // Model Factory
   DLDevice device_t{kDLCUDA, 0}; // If running in CPU change to kDLCPU
-  LreModel model(model_binary,key_path, device_t);
+  LreModel model(model_binary,key, device_t);
+
 
   // Preprocessing
   cv::Mat image_input = cv::imread(img_path);
-  cv::Mat processed_image = preprocess_imagenet_torch_nchw(image_input,model.input_width,model.input_height);
+  cv::Mat processed_image = preprocess_imagenet(image_input,model.input_width,model.input_height);
 
   // Inference
   model.InferOnce(processed_image.data);
