@@ -1,4 +1,6 @@
 #include <tvm/runtime/latentai/lre_model.hpp>
+#include <tvm/runtime/latentai/lre_cryption_service.hpp>
+
 #include "yolov5_processors.hpp"
 
 #include <sys/time.h>
@@ -13,11 +15,18 @@ int main(int argc, char *argv[]) {
   // Parsing arguments by user
   std::string model_binary{argv[1]};
   std::string image_directory_path{argv[2]};
-  std::string key_path = "";
+  std::vector <unsigned char> key;
+  std::string password; 
   
+  // Uncomment next 3 lines to use LRE Cryption services to unlock the unecrypted key.
+  
+  // std::cout << " Enter password to unlock key " << std::endl;
+  // std::cin >> password;
+  // key = unlock_key(password,key_path);
+
   // Model Factory
   DLDevice device_t{kDLCUDA, 0}; //Change to kDLCPU if inference target is a CPU 
-  LreModel model(model_binary,key_path, device_t);
+  LreModel model(model_binary,key, device_t);
 
   for (const auto & entry : fs::directory_iterator(image_directory_path))
   {

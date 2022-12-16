@@ -15,6 +15,11 @@ unzip libtorch-cxx11-abi-shared-with-deps-1.12.1+cpu.zip
 unzip libtorch-cxx11-abi-shared-with-deps-1.12.1+cu116.zip
 </code>
 
+#### Installation instructions for CUDA 11.7 Version
+<code>wget https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.0%2Bcu117.zip
+unzip libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip
+</code>
+
 #### Installation instructions for Jetpack
 https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
 <code>wget https://developer.download.nvidia.com/compute/redist/jp/v50/pytorch/torch-1.12.0a0+2c916ef.nv22.3-cp38-cp38-linux_aarch64.whl
