@@ -38,7 +38,7 @@ add_executable(${PROJECT_NAME} application.cpp ${LRE_SOURCES})
 # -------------------------------------------------------------------------------------------
 # Set ENV
 # -------------------------------------------------------------------------------------------
-set(TVM_ROOT $ENV{TVM_HOME})
+set(TVM_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../latentai-tvm)
 cmake_print_variables(TVM_ROOT)
 cmake_print_variables(CMAKE_CURRENT_SOURCE_DIR)
 # -------------------------------------------------------------------------------------------
@@ -60,6 +60,9 @@ include_directories(${TVM_INCLUDE_DIR})
 
 # TVM Runtime
 set(TVM_RUNTIME_LIB ${TVM_ROOT}/build/libtvm_runtime.so)
+if(NOT EXISTS ${TVM_RUNTIME_LIB})
+  message(FATAL_ERROR "TVM Runtime library not found at ${TVM_RUNTIME_LIB}")
+endif()
 cmake_print_variables(TVM_RUNTIME_LIB)
 include_directories(TVM_RUNTIME_LIB)
 
