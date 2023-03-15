@@ -11,6 +11,11 @@ See the provided `inference_commands.bash` script.  This can be used as an examp
 4. For CPU targets change {kDLCUDA, 0} to {kDLCPU,0} in application.cpp
 5. run `bash inference_commands.bash`
 
+For step one,  we suggest starting with the provided setup scripts. [Please see the dependencies section of the top level README](../../README.md)
+
+If you are only targeting C++, you may not wish to install everything in those setup scripts, but you may wish to use them for reference.
+
+The critical dependencies for the C++ examples are listed below.  Note that this C++ example does not require `torchvision`
 
 ## Prerequisites 
 
@@ -81,6 +86,20 @@ https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
 ### OpenCV
     apt install libopencv-dev
 
+### LatentAI Runtime Libraries
+```
+# Add the Latent AI debian repository to your apt lists
+sudo sh ../../../setup_scripts/add_latentai_debian_repository.sh
+
+# For CPU Target, install the cpu runtime
+# sudo apt install latentai-runtime-cpu
+
+# For CUDA Target, install the gpu runtime
+sudo apt install latentai-runtime-cuda
+
+# You will also need to install the runtime development package
+sudo apt install latentai-runtime-dev
+```
 
 ## Inputs
 - modelLibrary.so: Generated using the LatentAI's SDK
@@ -94,6 +113,8 @@ https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
     cmake -DCMAKE_PREFIX_PATH=/path/to/libtorch/ .. 
     # cmake option 2 (Jetpack)
     For Jetpack cmake -DCMAKE_PREFIX_PATH=`python3 -c 'import torch;print(torch.utils.cmake_prefix_path)'` ..
+    # cmake option 3 (Raspberry Pi)
+    cmake -DCMAKE_PREFIX_PATH=/pathto/pytorch/torch ..
     
     make -j8
 
