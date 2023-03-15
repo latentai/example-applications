@@ -82,6 +82,13 @@ https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
     wget https://developer.download.nvidia.com/compute/redist/jp/v50/pytorch/torch-1.12.0a0+2c916ef.nv22.3-cp38-cp38-linux_aarch64.whl
     pip install torch-1.12.0a0+2c916ef.nv22.3-cp38-cp38-linux_aarch64.whl
 
+#### Installation instructions for Raspberry Pi Bullseye OS
+Tested with libtorch-1.13.0
+https://qengineering.eu/install-pytorch-on-raspberry-pi-4.html
+
+    gdown https://drive.google.com/uc?id=10HvaVNJ4fVBNuGeI3GNFz6e-xiGK9v5P
+    tar -xf libtorch-1.13.0-Bullseye-aarch64-CPU.tar.gz
+    rm libtorch-1.13.0-Bullseye-aarch64-CPU.tar.gz
 
 ### OpenCV
     apt install libopencv-dev
