@@ -1,6 +1,6 @@
 # LatentAI LRE 
 
-## C++ YOLOV5 Torch Example
+## C++ YOLOV5 Torch/Torchvision Example
 
 ### Quick Start
 See the provided `inference_commands.bash` script.  This can be used as an example to run FP32, FP16 and INT8 versions of a model.  To use this script:
