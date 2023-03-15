@@ -7,4 +7,4 @@ This folder contains a python script that employs the LRE package to run an infe
 3. Edit `FLOAT32_PACKAGE` and `INT8_PACKAGE` in the bash script to point to the package directories.
 4. Run bash `inference_commands.bash`
 
-For step one,  we suggest starting with the provided setup scripts. [Please see the dependencies section of the top level README](../../README.md)
+For step one,  we suggest starting with the provided setup scripts. [Please see the dependencies section of the top level README](../../../README.md)
