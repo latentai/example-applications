@@ -7,9 +7,14 @@
 
 #!/bin/bash
 
+FLOAT32_PACKAGE=~/models/mb1-ssd/x86_64_cuda/Float32-package
+INT8_PACKAGE=~/models/mb1-ssd/x86_64_cuda/Int8-package
 
-FLOAT32_PACKAGE=~/models/mb1-ssd/aarch64/Float32-package
-INT8_PACKAGE=~/models/mb1-ssd/aarch64/Int8-package
+if [ -v MODEL_PATH ];
+then
+    FLOAT32_PACKAGE=$MODEL_PATH/Float32-package
+    INT8_PACKAGE=$MODEL_PATH/Int8-package
+fi
 
 echo "FP32..."
 mkdir -p $FLOAT32_PACKAGE/trt-cache

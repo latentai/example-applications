@@ -8,6 +8,12 @@
 FLOAT32_MODEL=~/models/efficientdet_d0/x86_64_cuda/Float32-compile
 INT8_MODEL=~/models/efficientdet_d0/x86_64_cuda/Int8-optimize
 
+if [ -v MODEL_PATH ];
+then
+    FLOAT32_MODEL=$MODEL_PATH/Float32-compile
+    INT8_MODEL=$MODEL_PATH/Int8-optimize
+fi
+
 # Compile
 mkdir build
 cd build

@@ -6,7 +6,7 @@
 See the provided `inference_commands.bash` script.  This can be used as an example to run FP32, FP16 and INT8 versions of a model.  To use this script:
 
 1. Install the device dependencies.
-2. Copy the `FLoat32-compile` and `Int8-optimize` C++ LRE objects `modelLibrary.so` to the device
+2. Copy the `Float32-compile` and `Int8-optimize` C++ LRE objects `modelLibrary.so` to the device
 3. Edit the inference_commands script to set `FLOAT32_MODEL` and `INT8_MODEL` variables to point to your model paths.
 4. For CPU targets change {kDLCUDA, 0} to {kDLCPU,0} in application.cpp
 5. run `bash inference_commands.bash`

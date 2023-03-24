@@ -10,6 +10,12 @@
 FLOAT32_MODEL=~/models/timm-gernet_m/x86_64_cuda/Float32-compile
 INT8_MODEL=~/models/timm-gernet_m/x86_64_cuda/Int8-optimize
 
+if [ -v MODEL_PATH ]
+then
+    FLOAT32_MODEL=$MODEL_PATH/Float32-compile
+    INT8_MODEL=$MODEL_PATH/Int8-optimize
+fi
+
 # Compile
 mkdir build
 cd build
@@ -28,4 +34,4 @@ TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build
 
 # INT8
 mkdir -p $INT8_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so  ../../sample_images/apple.jpg ../../labels/class_names_10.txt
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so  ../../sample_images/apple.jpg ../../labels/class_names_10.txt
