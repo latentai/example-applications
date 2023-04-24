@@ -10,6 +10,7 @@ sudo apt install -y libjpeg62 libjpeg8-dev
 
 pip3 install Cython
 pip3 install -U --no-deps numpy==1.19.4 protobuf==3.19.6 pybind11 pkgconfig
+pip3 install Pillow==8.4.0
 
 # Installing cmake using snap
 #sudo apt remove -y --purge cmake
@@ -19,9 +20,9 @@ pip3 install -U --no-deps numpy==1.19.4 protobuf==3.19.6 pybind11 pkgconfig
 #hash -r
 
 # Alternative method of upsating cmake: using apt
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
 sudo apt install -y software-properties-common
-add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
 sudo apt install -y cmake
 
 # Pytorch and Torchvision
