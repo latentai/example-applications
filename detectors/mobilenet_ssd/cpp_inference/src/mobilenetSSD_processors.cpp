@@ -11,7 +11,6 @@ cv::Mat preprocess_mobilenetSSD(cv::Mat &ImageInput, float width, float height) 
     
     const cv::Size image_size = cv::Size( width, height );
     cv::cvtColor(ImageInput, ImageInput, cv::COLOR_BGR2RGB);
-    cv::resize(ImageInput, ImageInput, image_size,0,0,cv::INTER_NEAREST); 
     ImageInput.convertTo(ImageInput, CV_32FC3, 1.f/255.f); // Normalization between 0-1
     cv::subtract(ImageInput,cv::Scalar(0.485f, 0.456f, 0.406f),ImageInput, cv::noArray(), -1);
     cv::divide(ImageInput,cv::Scalar(0.229f, 0.224f, 0.225f),ImageInput,1,-1);

@@ -18,6 +18,8 @@
 #include <numeric>
 
 
-cv::Mat preprocess_imagenet_torch_nchw(cv::Mat &t_image_input, float image_shape_height,float image_shape_width); 
-std::vector<std::pair<float,float>> postprocess_top_five(std::vector<DLTensor *> &tvm_outputs, std::vector<int> &output_size, std::string &label_file_name);
-std::pair<float,float> postprocess_top_one (std::vector<DLTensor *> &tvm_outputs, std::vector<int> &output_size, std::string &label_file_name);
+cv::Mat preprocess_imagenet_torch_nchw(cv::Mat &t_image_input); 
+std::vector<std::pair<float,float>> postprocess_top_five(std::vector<DLTensor *> &tvm_outputs, std::vector<int> &output_size);
+std::pair<float,float> postprocess_top_one (std::vector<DLTensor *> &tvm_outputs, std::vector<int> &output_size);
+void printTopOne(std::pair<float,float> top_one, std::string &label_file_name);
+void printTopFive(std::vector<std::pair<float,float>> top_five, std::string &label_file_name);

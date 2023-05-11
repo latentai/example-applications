@@ -36,9 +36,9 @@ namespace fs = std::experimental::filesystem;
 
 static void monly_deleter(DLManagedTensor* self) { delete self; }
 
-cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor);
+cv::Mat resizeAndCenterImage(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor);
 std::vector<torch::Tensor> postprocess_efficientdet(std::vector<DLTensor *> &tvm_outputs,cv::Size dstSize);
-cv::Mat preprocess_efficientdet(cv::Mat &imageInput, cv::Size dstSize);
+cv::Mat preprocess_efficientdet(cv::Mat &imageInput);
 
 torch::Tensor decode_box_outputs(torch::Tensor rel_codes, torch::Tensor anchors, bool output_xyxy);
 torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size);

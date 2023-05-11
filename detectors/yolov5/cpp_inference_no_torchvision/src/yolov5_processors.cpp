@@ -8,7 +8,6 @@
 #include "yolov5_processors.hpp"
 
 cv::Mat preprocess_yolov5(cv::Mat &ImageInput, float width, float height) {
-  cv::resize(ImageInput, ImageInput, cv::Size(width, height));  // Resize
   cv::cvtColor(ImageInput, ImageInput, cv::COLOR_BGR2RGB);  // RGB Format required
   ImageInput.convertTo(ImageInput, CV_32FC3, 1.f / 255);  // Convert to float ranges 0-1
   cv::dnn::blobFromImage(ImageInput, ImageInput);  // NHWC to NCHW

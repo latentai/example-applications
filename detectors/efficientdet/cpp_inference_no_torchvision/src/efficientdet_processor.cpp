@@ -8,7 +8,7 @@
 #include "efficientdet_processors.hpp"
 
 
-cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor)
+cv::Mat resizeAndCenterImage(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor)
 {
   cv::Mat output;
   cv::Mat background(dstSize.width, dstSize.height, CV_32FC3, bgcolor);
@@ -49,12 +49,10 @@ cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, con
   return output;
 }
 
-cv::Mat preprocess_efficientdet(cv::Mat &imageInput, cv::Size dstSize)
+cv::Mat preprocess_efficientdet(cv::Mat &imageInput)
 {
 
   cv::cvtColor(imageInput, imageInput, cv::COLOR_BGR2RGB); // RGB Format required
-  cv::Scalar background(124, 116, 104);
-  imageInput = resizeKeepAspectRatio(imageInput, dstSize, background);
   imageInput.convertTo(imageInput, CV_32FC3, 1.f/255.f); // Normalization between 0-1
   cv::subtract(imageInput, cv::Scalar(0.485f, 0.456f, 0.406f), imageInput, cv::noArray(), -1);
   cv::divide(imageInput, cv::Scalar(0.229f, 0.224f, 0.225f), imageInput, 1, -1);
@@ -204,7 +202,7 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
 
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(width,height);
-  cv::Mat image_out = resizeKeepAspectRatio(origImage, dstSize, background);
+  cv::Mat image_out = resizeAndCenterImage(origImage, dstSize, background);
 
   for (int i = 0; i < pred_boxes_x1y1x2y2.sizes()[0]; i++)
   {
