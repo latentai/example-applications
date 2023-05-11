@@ -44,7 +44,7 @@ add_executable(${PROJECT_NAME} application.cpp ${LRE_SOURCES})
 # Include dirs
 # -------------------------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../utils)
 # -------------------------------------------------------------------------------------------
 # 3rd party Dependencies
 # -------------------------------------------------------------------------------------------
