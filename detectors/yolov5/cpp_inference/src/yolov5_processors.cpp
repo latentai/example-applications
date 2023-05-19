@@ -20,7 +20,6 @@ std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor*> &tvm_outputs) 
 
   // Decoding
   dloutputs = convert_to_atTensor(tvm_outputs);
-  reshape_heads(dloutputs);
   auto decoded_results = decode(dloutputs);
   auto scores = decoded_results[0];
   auto pred_boxes_x1y1x2y2 = decoded_results[1];
@@ -34,33 +33,6 @@ std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor*> &tvm_outputs) 
   auto result = vision::ops::nms(pred_boxes_x1y1x2y2,scores,0.45);
 
   result_output.emplace_back(pred_boxes_x1y1x2y2.index({result}));
-  result_output.emplace_back(scores.index({result}));
-  result_output.emplace_back(inds_scores[1].index({result}));
-
-  return result_output;
-}
-
-std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs,  std::string image_path, float width, float height)
-{
-  std::vector<at::Tensor> dloutputs,result_output;
-
-  // Decoding
-  dloutputs = convert_to_atTensor(tvm_outputs);
-  reshape_heads(dloutputs);
-  auto decoded_results = decode(dloutputs);
-  auto scores = decoded_results[0];
-  auto pred_boxes_x1y1x2y2 = decoded_results[1];
-
-  // Drop Below Threshold
-  auto inds_scores = at::where(scores > 0.45);
-  pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({inds_scores[0]});
-  scores = scores.index({inds_scores[0],inds_scores[1]});
-
-  // NMS
-  auto result = vision::ops::nms(pred_boxes_x1y1x2y2,scores,0.45);
-
-  pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({result});
-  result_output.emplace_back(pred_boxes_x1y1x2y2);
   result_output.emplace_back(scores.index({result}));
   result_output.emplace_back(inds_scores[1].index({result}));
 
@@ -109,7 +81,6 @@ std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors)
 void reshape_heads(std::vector<at::Tensor> &heads)
 {
   for (int i = 0; i < 3 ; i++){
-
     auto dlTensorShape = heads[i].sizes();
     heads[i] = heads[i].reshape({dlTensorShape[0],-1,dlTensorShape[4]});
   }
@@ -118,6 +89,8 @@ void reshape_heads(std::vector<at::Tensor> &heads)
 std::vector<at::Tensor> decode(std::vector<at::Tensor> &heads)
 {
   std::vector<at::Tensor> decoded;
+
+  reshape_heads(heads);
 
   auto pred_logits =  at::sigmoid(at::cat({ heads[0],heads[1],heads[2]},1)[0]);
   auto scores = pred_logits.slice(1,5) * pred_logits.slice(1,4,5);
@@ -151,4 +124,21 @@ std::string date_stamp()
 	std::strftime(date_string, 50, "%B_%d_%Y_%T", curr_tm);
   
   return date_string;
+}
+
+void print_results(std::vector<at::Tensor> &result){
+  std::cout << "-----------------------------------------------------------" << "\n";
+      std::cout << std::right << std::setw(24) << "Box" 
+                << std::right << std::setw(24) << "Score"
+                << std::right << std::setw(10) << "Class" << "\n";
+      std::cout << "-----------------------------------------------------------" << "\n";
+      for (int i = 0; i < result[0].size(0); i++) {
+          std::cout << std::fixed << std::setprecision(4) 
+                    << std::right << std::setw(8) << result[0][i][0].item<float>() << "  "
+                    << std::right << std::setw(8) << result[0][i][1].item<float>() << "  "
+                    << std::right << std::setw(8) << result[0][i][2].item<float>() << "  "
+                    << std::right << std::setw(8) << result[0][i][3].item<float>() 
+                    << std::right << std::setw(12) << std::setprecision(4) << result[1][i].item<float>()
+                    << std::right << std::setw(8) << result[2][i].item<int>() << std::endl;
+      }
 }

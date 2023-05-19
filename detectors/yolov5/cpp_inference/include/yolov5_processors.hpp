@@ -42,6 +42,7 @@ std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors);
 void reshape_heads(std::vector<at::Tensor> &heads);
 std::vector<at::Tensor> decode(std::vector<at::Tensor> &heads);
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
+void print_results(std::vector<at::Tensor> &result);
 
 std::string date_stamp();
 

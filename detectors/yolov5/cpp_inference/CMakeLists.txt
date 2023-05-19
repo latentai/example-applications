@@ -16,7 +16,7 @@ include(CMakePrintHelpers) # Helper
 # ---------------------------------PROJECT_NAME----------------------------------------------------------
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_COMPILER /usr/bin/c++)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-O3 -fPIC)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -54,10 +54,10 @@ cmake_print_variables(OpenCV_INCLUDE_DIRS)
 
 ## TVM Runtime
 find_library(TVM_RUNTIME_LIB REQUIRED
-            NAMES libtvm_runtime.so
+            NAMES liblre.so
             PATHS
             /usr/local/bin/
-            /usr/tvm/build/
+            /usr/share/latentai/sdk/runtimes/x86_64/liblre/cuda/
 )
 cmake_print_variables(TVM_RUNTIME_LIB)
 
@@ -67,7 +67,7 @@ include_directories(/usr/local/include/)
 include(FetchContent) # once in the project to include the module
 FetchContent_Declare(dmlccore
                      GIT_REPOSITORY https://github.com/dmlc/dmlc-core.git
-                     GIT_TAG        21cc7de0dc9fd6acb796e1be6181fa8e6b6c8f41)
+                     GIT_TAG        09511cf9fe5ff103900a5eafb50870dc84cc17c8)
 if(NOT dmlccore_POPULATED)
   FetchContent_Populate(dmlccore)
 endif()
@@ -75,7 +75,7 @@ include_directories(${dmlccore_SOURCE_DIR}/include)
 
 FetchContent_Declare(dlpack
                      GIT_REPOSITORY https://github.com/dmlc/dlpack.git
-                     GIT_TAG        ddeb264880a1fa7e7be238ab3901a810324fbe5f)
+                     GIT_TAG        e2bdd3bee8cb6501558042633fa59144cc8b7f5f)
 if(NOT dlpack_POPULATED)
   FetchContent_Populate(dlpack)
 endif()
