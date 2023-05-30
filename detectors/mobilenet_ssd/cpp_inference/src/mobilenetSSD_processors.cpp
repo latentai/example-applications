@@ -7,9 +7,8 @@
 
 #include "mobilenetSSD_processors.hpp"
 
-cv::Mat preprocess_mobilenetSSD(cv::Mat &ImageInput, float width, float height) {
+cv::Mat preprocess_mobilenetSSD(cv::Mat &ImageInput) {
     
-    const cv::Size image_size = cv::Size( width, height );
     cv::cvtColor(ImageInput, ImageInput, cv::COLOR_BGR2RGB);
     ImageInput.convertTo(ImageInput, CV_32FC3, 1.f/255.f); // Normalization between 0-1
     cv::subtract(ImageInput,cv::Scalar(0.485f, 0.456f, 0.406f),ImageInput, cv::noArray(), -1);
@@ -19,17 +18,14 @@ cv::Mat preprocess_mobilenetSSD(cv::Mat &ImageInput, float width, float height) 
     return ImageInput;
 }
 
-at::Tensor postprocess_mobilenetSSD(std::vector<DLTensor*> &tvm_outputs) {
+at::Tensor postprocess_mobilenetSSD(std::vector<DLTensor*> &tvm_outputs, int width, int height) {
 
-  float score_threshold = 0.01;
+  float score_threshold = 0.1;
   float iou_threshold = 0.45;
   float threshold = 0.3;
   int candidates_size = 200;
   int top_k = -1;
   float eps = 1e-5;
-
-  int width = 300;
-  int height = 300;
 
   std::vector<at::Tensor> result_output,dloutputs;
   at::Tensor results;
@@ -41,42 +37,30 @@ at::Tensor postprocess_mobilenetSSD(std::vector<DLTensor*> &tvm_outputs) {
   auto scores = dloutputs[0][0];
   auto boxes = dloutputs[1][0];
 
-  // Iterate over each class
-  at::Tensor probs;
-  std::vector<at::Tensor> mask;
-  at::Tensor select_boxes;
-  std::tuple<at::Tensor, at::Tensor> sorted_scores;
 
   for(int i = 1; i < scores.size(1); i++)
   {
 
     // Drop classes and boxes below score threshold
-    probs = scores.index({"...", i});
-    mask = at::where(probs > score_threshold);
+    auto probs = scores.index({"...", i});
+    auto mask = at::where(probs > score_threshold);
 
     probs = probs.index({mask[0]}); 
 
     if(probs.size(0) == 0){
       continue;
     }
-    select_boxes = boxes.index({mask[0],"..."});
+    auto select_boxes = boxes.index({mask[0],"..."});
 
    
     at::Tensor picked_boxes_and_scores = hard_nms(select_boxes,probs,iou_threshold,top_k,candidates_size);
 
-    picked_boxes_and_scores.index({"...",0}) = picked_boxes_and_scores.index({"...",0}) * width; 
-    picked_boxes_and_scores.index({"...",1}) = picked_boxes_and_scores.index({"...",1}) * height; 
-    picked_boxes_and_scores.index({"...",2}) = picked_boxes_and_scores.index({"...",2}) * width; 
-    picked_boxes_and_scores.index({"...",3}) = picked_boxes_and_scores.index({"...",3}) * height;
+    resize_boxes_and_label(picked_boxes_and_scores,width,height,i);
 
-
-    at::Tensor label = at::ones(picked_boxes_and_scores.size(0),picked_boxes_and_scores.device().type()) * i;
-    picked_boxes_and_scores = at::cat({picked_boxes_and_scores,label.reshape({-1,1})},1);
     result_output.emplace_back(picked_boxes_and_scores);
   }
 
   results = at::cat(result_output,0);
-
   auto filter = at::where(results.index({"...",4}) > threshold);
 
   return results.index({filter[0]});
@@ -205,6 +189,25 @@ std::string date_stamp()
   return date_string;
 }
 
+void resize_boxes_and_label(at::Tensor &picked_boxes_and_scores, int width, int height,int label)
+{
+  picked_boxes_and_scores.index({"...",0}) = picked_boxes_and_scores.index({"...",0}) * width; 
+  picked_boxes_and_scores.index({"...",1}) = picked_boxes_and_scores.index({"...",1}) * height; 
+  picked_boxes_and_scores.index({"...",2}) = picked_boxes_and_scores.index({"...",2}) * width; 
+  picked_boxes_and_scores.index({"...",3}) = picked_boxes_and_scores.index({"...",3}) * height;
 
+  at::Tensor labels = at::ones(picked_boxes_and_scores.size(0),picked_boxes_and_scores.device().type()) * label;
+  picked_boxes_and_scores = at::cat({picked_boxes_and_scores,labels.reshape({-1,1})},1);
+}
 
+void print_results(at::Tensor result){
+    std::cout << "-----------------------------------------------------------" << "\n";
+    std::cout << std::right << std::setw(24) << "Box" 
+              << std::right << std::setw(24) << "Score"
+              << std::right << std::setw(10) << "Class" << "\n";
+    std::cout << "-----------------------------------------------------------" << "\n";
+    std::cout << result << "\n";
+    std::cout << "-----------------------------------------------------------" << "\n";
+
+}
 

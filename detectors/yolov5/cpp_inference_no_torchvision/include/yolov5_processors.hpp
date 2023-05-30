@@ -34,16 +34,17 @@ static void monly_deleter(DLManagedTensor* self) { delete self; }
 
 cv::Mat preprocess_yolov5(cv::Mat &ImageInput, float width, float height);
 
-std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs, float width, float height);
+std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs);
 
 std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors);
 std::vector<at::Tensor> decode(std::vector<at::Tensor> &heads);
 
 at::Tensor get_area(at::Tensor left_top,at::Tensor right_bottom);
 at::Tensor get_iou(at::Tensor boxes0,at::Tensor boxes1,float eps = 1e-5);
-at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores, float iou_threshold, int top_k, int candidates_size);
+at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores,at::Tensor classes, float iou_threshold, int top_k, int candidates_size);
 
 void reshape_heads(std::vector<at::Tensor> &heads);
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
+void print_results(at::Tensor &result);
 
 std::string date_stamp();

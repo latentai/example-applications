@@ -44,5 +44,9 @@ torch::Tensor decode_box_outputs(torch::Tensor rel_codes, torch::Tensor anchors,
 torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size);
 torch::Tensor generate_anchors(int width, int height, int min_level, int max_level, int num_scales,c10::DeviceType infer_device);
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
-at::Tensor convert_to_atTensor(DLTensor *tvm_output);
+std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors);
+std::map<std::string, at::Tensor> get_top_classes_and_boxes(std::vector<torch::Tensor> outputs, int NUM_LEVELS = 5, int NUM_CLASSES = 90, int MAX_DETECTION_POINTS = 5000);
+at::Tensor vision_nms(at::Tensor box_out_decoded,at::Tensor scores, at::Tensor classes, float iou_threshold = 0.45 , float confidence_threshold = 0.3 , int max_det_per_image = 15);
 std::string date_stamp();
+
+void print_detections(at::Tensor detections);

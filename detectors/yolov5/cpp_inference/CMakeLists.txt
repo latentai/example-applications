@@ -4,7 +4,6 @@
 # This file is part of the example-applications (LRE) product,
 # and is released under the Apache 2.0 License.
 # *****************************************************************************/
-
 cmake_minimum_required(VERSION 3.14.4)
 
 # Project name
@@ -21,11 +20,6 @@ add_compile_options(-O3 -fPIC)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# -------------------------------------------------------------------------------------------
-# Set Common CPP Flags
-# -------------------------------------------------------------------------------------------
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(CppFlags)
 # -------------------------------------------------------------------------------------------
 # Output Directories
 # -------------------------------------------------------------------------------------------
@@ -56,18 +50,16 @@ cmake_print_variables(OpenCV_INCLUDE_DIRS)
 find_library(TVM_RUNTIME_LIB REQUIRED
             NAMES liblre.so
             PATHS
-            /usr/local/bin/
-            /usr/share/latentai/sdk/runtimes/x86_64/liblre/cuda/
+            /usr/lib/
 )
 cmake_print_variables(TVM_RUNTIME_LIB)
 
-include_directories(/usr/tvm/include/)
-include_directories(/usr/local/include/)
+include_directories(/usr/include/)
 
 include(FetchContent) # once in the project to include the module
 FetchContent_Declare(dmlccore
                      GIT_REPOSITORY https://github.com/dmlc/dmlc-core.git
-                     GIT_TAG        09511cf9fe5ff103900a5eafb50870dc84cc17c8)
+                     GIT_TAG 09511cf9fe5ff103900a5eafb50870dc84cc17c8)
 if(NOT dmlccore_POPULATED)
   FetchContent_Populate(dmlccore)
 endif()
@@ -75,7 +67,7 @@ include_directories(${dmlccore_SOURCE_DIR}/include)
 
 FetchContent_Declare(dlpack
                      GIT_REPOSITORY https://github.com/dmlc/dlpack.git
-                     GIT_TAG        e2bdd3bee8cb6501558042633fa59144cc8b7f5f)
+                     GIT_TAG e2bdd3bee8cb6501558042633fa59144cc8b7f5f)
 if(NOT dlpack_POPULATED)
   FetchContent_Populate(dlpack)
 endif()
@@ -83,7 +75,7 @@ include_directories(${dlpack_SOURCE_DIR}/include)
 
 #TORCH
 find_package(Torch REQUIRED)
-include_directories(${TORCH_INCLUDE_DIRS} )
+include_directories(${TORCH_INCLUDE_DIRS})
 
 find_package(TorchVision REQUIRED)
 

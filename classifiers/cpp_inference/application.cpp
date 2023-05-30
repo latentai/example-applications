@@ -9,40 +9,12 @@
 #include <tvm/runtime/latentai/lre_cryption_service.hpp>
 #include "imagenet_torch_nchw_processors.hpp"
 
-#include <timer_example.hpp>
+#include <timer_chrono.hpp>
 #include <image_manipulation.hpp>
 #include <parse_inputs.hpp>
 #include <display_model_metadata.hpp>
 
-TimeOperations classification_timer{};
-
-TimeOperations RunClassification(const std::string& img_path, LreModel& model, std::string& label_file_name,
-                  bool print_each_iteration, bool print_detections) {
-    // Read and Resize Image
-    auto image_input{ReadImage(img_path)};
-    auto resized_image = ResizeImage(image_input, model.input_width, model.input_height);
-
-    // Preprocessing
-    classification_timer.preprocessing.emplace_back("Average Preprocessing", print_each_iteration);
-    cv::Mat processed_image = preprocess_imagenet_torch_nchw(resized_image);
-    classification_timer.preprocessing.back().Stop();
-
-    // Inference
-    classification_timer.inference.emplace_back("Average Inference", print_each_iteration);
-    model.InferOnce(processed_image.data);
-    classification_timer.inference.back().Stop();
-
-    // Post Processing
-    classification_timer.postprocessing.emplace_back("Average Postprocessing", print_each_iteration);
-    std::pair<float, float> top_one = postprocess_top_one(model.tvm_outputs, model.output_size);
-    classification_timer.postprocessing.back().Stop();
-
-    if(print_detections){
-      // Print Postprocessor output
-      printTopOne(top_one, label_file_name);
-    }
-    return {classification_timer.preprocessing, classification_timer.inference, classification_timer.postprocessing};
-}
+Timer t_preprocessing,t_inference,t_postprocessing;
 
 int main(int argc, char *argv[]) {
   InputParams params;
@@ -56,30 +28,45 @@ int main(int argc, char *argv[]) {
   std::string img_path = params.img_path;
   std::string label_file_name = params.label_file_path;
 
-  std::vector<unsigned char> key;
-  bool print_each_iteration{true};
-  bool dont_print_each_iteration{false};
 
   // Model Factory
   DLDevice device_t{kDLCUDA, 0}; // If running in CPU change to kDLCPU
-  LreModel model(model_binary,key, device_t);
+  LreModel model(model_binary, device_t);
   PrintModelMetadata(model);
   
   // WarmUp Phase 
-  Timer warmup_timer("Total Warm Up + Image Manipulation", print_each_iteration);
-  RunClassification(img_path, model, label_file_name, dont_print_each_iteration, false);
-  warmup_timer.Stop();
-  
+  model.WarmUp(1);
+
+  std::pair<float, float> top_one;
+
   // Run pre, inference and post processing x iterations
   for (int i = 1; i < iterations; i++) {
-    int last_iteration{iterations - 1};
-    bool print_detections{(i == last_iteration)}; // Print detections & stats only in last iteration
-    classification_timer = RunClassification(img_path, model, label_file_name, dont_print_each_iteration, print_detections);
-    if (print_detections){
-      PrintOperationsStats(classification_timer, last_iteration);
-    }
+
+    auto image_input{ReadImage(img_path)};
+    auto resized_image = ResizeImage(image_input, model.input_width, model.input_height);
+
+    t_preprocessing.start();
+    cv::Mat processed_image = preprocess_imagenet_torch_nchw(resized_image);
+    t_postprocessing.stop();
+
+    t_inference.start();
+    model.InferOnce(processed_image.data);
+    t_inference.stop();
+
+    t_postprocessing.start();
+    top_one = postprocess_top_one(model.tvm_outputs, model.output_size);
+    t_postprocessing.stop();
+
   }
+
+  printTopOne(top_one, label_file_name);
+
+  std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Postprocessing Time: " << t_postprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
+
 }
+
 
 
   
