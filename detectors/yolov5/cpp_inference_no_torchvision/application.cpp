@@ -1,9 +1,9 @@
-// ******************************************************************************
+// *****************************************************************************
 // Copyright (c) 2019-2023 by Latent AI Inc. All Rights Reserved.
 //
 // This file is part of the example-applications (LRE) product,
 // and is released under the Apache 2.0 License.
-// *****************************************************************************/
+// *****************************************************************************
 
 #include <tvm/runtime/latentai/lre_model.hpp>
 #include <tvm/runtime/latentai/lre_cryption_service.hpp>
@@ -11,45 +11,14 @@
 #include "yolov5_processors.hpp"
 
 #include <iomanip>
-#include <timer_example.hpp>
+#include <timer_chrono.hpp>
 #include <image_manipulation.hpp>
 #include <parse_inputs.hpp>
 #include <display_model_metadata.hpp>
 
-TimeOperations yoloTimer{};
-
-TimeOperations RunYoloV5Detection(const std::string& imgPath, LreModel& model,
-                  bool print_each_iteration, bool print_detections) {
-  // Read Image
-  auto imageInput{ReadImage(imgPath)};
-  auto resized_image = ResizeImage(imageInput, model.input_width, model.input_height);
-
-  // Preprocess
-  yoloTimer.preprocessing.emplace_back("Average Preprocessing", print_each_iteration);
-  cv::Mat processed_image =  preprocess_yolov5(resized_image,model.input_width,model.input_height);
-  yoloTimer.preprocessing.back().Stop();
-
-  // Infer
-  yoloTimer.inference.emplace_back("Average Inference", print_each_iteration);
-  model.InferOnce(processed_image.data);
-  yoloTimer.inference.back().Stop();
-
-  // Postprocess
-  yoloTimer.postprocessing.emplace_back("Average Postprocessing", print_each_iteration);
-  auto result = postprocess_yolov5(model.tvm_outputs, model.input_width, model.input_height);
-  yoloTimer.postprocessing.back().Stop();
-  
-  if(print_detections){
-    std::cout << "-----------------------------------------------------------" << "\n";
-    std::cout << std::right << std::setw(24) << "Box" 
-              << std::right << std::setw(24) << "Score" << "\n";
-    std::cout << "-----------------------------------------------------------" << "\n";
-    std::cout << result[0] << "\n";
-    std::cout << "-----------------------------------------------------------" << "\n";
-    draw_boxes(result[0], imgPath, model.input_width, model.input_height);
-  }
-  return {yoloTimer.preprocessing, yoloTimer.inference, yoloTimer.postprocessing};
-}
+Timer t_preprocessing,t_inference,t_decoding,t_thresholding,t_nms;
+std::vector<at::Tensor> result_output(2), dloutputs;
+at::Tensor result;
 
 int main(int argc, char *argv[]) {
   InputParams params;
@@ -57,34 +26,66 @@ int main(int argc, char *argv[]) {
       std::cerr << "Parsing of given command line arguments failed.\n";
       return 1;
   }
-
   std::string model_binary = params.model_binary_path;
   int iterations = params.iterations;
   std::string imgPath = params.img_path;
-  std::vector<unsigned char> key;
 
-  bool print_each_iteration{true};
-  bool dont_print_each_iteration{false};
   
   // Model Factory
   DLDevice device_t{kDLCUDA, 0}; //Change to kDLCPU if inference target is a CPU 
-  LreModel model(model_binary,key, device_t);
+  LreModel model(model_binary, device_t);
   PrintModelMetadata(model);
 
   std::cout << "Image: " << imgPath << std::endl;
 
   // WarmUp Phase 
-  Timer warmup_timer("Total Warm Up + Image Manipulation", print_each_iteration);
-  RunYoloV5Detection(imgPath, model, dont_print_each_iteration, false);
-  warmup_timer.Stop();
+  model.WarmUp(1);
 
   // Run pre, inference and post processing x iterations
   for (int i = 1; i < iterations; i++) {
-    int last_iteration{iterations - 1};
-    bool print_detections{(i == last_iteration)}; // Print detections & stats only in last iteration
-    yoloTimer = RunYoloV5Detection(imgPath, model, dont_print_each_iteration, print_detections);
-    if (print_detections){
-      PrintOperationsStats(yoloTimer, last_iteration);
-    }
+    auto imageInput{ReadImage(imgPath)};
+    auto resized_image = ResizeImage(imageInput, model.input_width, model.input_height);
+
+    // Preprocess
+    t_preprocessing.start();
+    cv::Mat processed_image =  preprocess_yolov5(resized_image,model.input_width,model.input_height);
+    t_preprocessing.stop();
+
+    // Infer
+    t_inference.start();
+    model.InferOnce(processed_image.data);
+    t_inference.stop();
+
+    // Postprocess
+    /// decode
+    t_decoding.start();
+    dloutputs = convert_to_atTensor(model.tvm_outputs);
+    auto decoded_results = decode(dloutputs);
+    t_decoding.stop();
+
+    /// drop below threshold
+    t_thresholding.start();
+    auto inds_scores = at::where(decoded_results[0] > 0.45);
+    decoded_results[1] = decoded_results[1].index({inds_scores[0]}); //boxes
+    decoded_results[0] = decoded_results[0].index({inds_scores[0],inds_scores[1]}); //scores
+    t_thresholding.stop();
+
+    /// NMS
+    t_nms.start();
+    result = hard_nms(decoded_results[1], decoded_results[0], inds_scores[1], 0.45, -1, 200);
+    auto filter = at::where(result.index({"...",4}) > 0.3);
+    result = result.index({filter[0]}); 
+    t_nms.stop();
   }
+
+  print_results(result);
+
+  draw_boxes(result, imgPath,model.input_width, model.input_height);
+
+  std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Decoding Time: " << t_decoding.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Thresholding Time: " << t_thresholding.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average NMS Time: " << t_nms.averageElapsedMilliseconds() << " ms" << std::endl;
+
 }

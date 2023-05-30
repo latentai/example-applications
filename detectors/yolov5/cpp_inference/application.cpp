@@ -11,13 +11,13 @@
 #include "yolov5_processors.hpp"
 
 #include <iomanip>
-#include <timer_chorono.hpp>
+#include <timer_chrono.hpp>
 #include <image_manipulation.hpp>
 #include <parse_inputs.hpp>
 #include <display_model_metadata.hpp>
 
 Timer t_preprocessing,t_inference,t_decoding,t_thresholding,t_nms;
-std::vector<at::Tensor> result_output, dloutputs;
+std::vector<at::Tensor> result_output(3), dloutputs;
 
 int main(int argc, char *argv[]) {
   InputParams params;
@@ -64,21 +64,19 @@ int main(int argc, char *argv[]) {
 
     /// drop below threshold
     t_thresholding.start();
-    auto scores = decoded_results[0];
-    auto pred_boxes_x1y1x2y2 = decoded_results[1];
-    auto inds_scores = at::where(scores > 0.45);
-    pred_boxes_x1y1x2y2 = pred_boxes_x1y1x2y2.index({inds_scores[0]});
-    scores = scores.index({inds_scores[0],inds_scores[1]});
+    auto inds_scores = at::where(decoded_results[0] > 0.45);
+    decoded_results[1] = decoded_results[1].index({inds_scores[0]}); //boxes
+    decoded_results[0] = decoded_results[0].index({inds_scores[0],inds_scores[1]}); //scores
     t_thresholding.stop();
 
     /// NMS
     t_nms.start();
-    auto result = vision::ops::nms(pred_boxes_x1y1x2y2,scores,0.45);
+    auto result = vision::ops::nms(decoded_results[1],decoded_results[0],0.45);
     t_nms.stop();
 
-    result_output.emplace_back(pred_boxes_x1y1x2y2.index({result}));
-    result_output.emplace_back(scores.index({result}));
-    result_output.emplace_back(inds_scores[1].index({result}));
+    result_output[0] = decoded_results[1].index({result}); //boxes
+    result_output[1] = decoded_results[0].index({result}); //scores
+    result_output[2] = inds_scores[1].index({result});  //class
 
   }
 
@@ -90,6 +88,5 @@ int main(int argc, char *argv[]) {
   std::cout << "Average Decoding Time: " << t_decoding.averageElapsedMilliseconds() << " ms" << std::endl;
   std::cout << "Average Thresholding Time: " << t_thresholding.averageElapsedMilliseconds() << " ms" << std::endl;
   std::cout << "Average NMS Time: " << t_nms.averageElapsedMilliseconds() << " ms" << std::endl;
-
 
 }

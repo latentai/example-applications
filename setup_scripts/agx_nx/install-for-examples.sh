@@ -5,7 +5,7 @@ sudo apt update
 
 sudo apt install -y libopencv-dev
 sudo apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
-sudo apt install -y latentai-runtime-cuda latentai-runtime-dev
+sudo apt install -y liblre-cuda liblre-dev
 
 pip3 install scikit-build
 #pip3 install opencv-python

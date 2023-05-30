@@ -94,6 +94,7 @@ The inference command for Float32 would be:
 ```
 ./bin/application \
   <path to>/model/Float32-compiled/modelLibrary.so \
+  10 \
   ../../sample_images/penguin.jpg \
   ../../labels/class_names_10.txt
 ```

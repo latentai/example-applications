@@ -14,13 +14,12 @@ cv::Mat preprocess_yolov5(cv::Mat &ImageInput, float width, float height) {
   return ImageInput;
 }
 
-std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs, float width, float height)
+std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs)
 {
   std::vector<at::Tensor> dloutputs,result_output;
 
   // Decoding
   dloutputs = convert_to_atTensor(tvm_outputs);
-  reshape_heads(dloutputs);
   auto decoded_results = decode(dloutputs);
   auto scores = decoded_results[0];
   auto pred_boxes_x1y1x2y2 = decoded_results[1];
@@ -31,7 +30,7 @@ std::vector<at::Tensor> postprocess_yolov5(std::vector<DLTensor *> &tvm_outputs,
   scores = scores.index({inds_scores[0],inds_scores[1]});
 
   // NMS
-  auto result = hard_nms(pred_boxes_x1y1x2y2, scores, 0.45, -1, 200);
+  auto result = hard_nms(pred_boxes_x1y1x2y2, scores, inds_scores[1],0.45, -1, 200);
   auto filter = at::where(result.index({"...",4}) > 0.3);
   result_output.emplace_back(result.index({filter[0]}));
   return result_output;
@@ -65,6 +64,8 @@ std::vector<at::Tensor> decode(std::vector<at::Tensor> &heads)
 {
   std::vector<at::Tensor> decoded;
 
+  reshape_heads(heads);
+
   auto pred_logits =  at::sigmoid(at::cat({ heads[0],heads[1],heads[2]},1)[0]);
   auto scores = pred_logits.slice(1,5) * pred_logits.slice(1,4,5);
   
@@ -87,7 +88,7 @@ std::vector<at::Tensor> decode(std::vector<at::Tensor> &heads)
   return decoded;
 }
 
-at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores, float iou_threshold, int top_k, int candidates_size)
+at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores, at::Tensor classes, float iou_threshold, int top_k, int candidates_size)
 {
 
   std::tuple<at::Tensor, at::Tensor> sorted_scores;
@@ -131,8 +132,7 @@ at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores, float iou_thresh
 
   picked_elements = at::stack(picked);
 
-  return at::cat({select_boxes.index({picked_elements}),scores.index({picked_elements}).reshape({-1,1})},1);
-  // return at::cat({select_boxes.index({picked_elements}),scores.index({picked_elements}).reshape({-1,1}), classes.index({picked_elements}).reshape({-1,1})},1);
+  return at::cat({select_boxes.index({picked_elements}),scores.index({picked_elements}).reshape({-1,1}), classes.index({picked_elements}).reshape({-1,1})},1);
 
 }
 
@@ -179,6 +179,18 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
   cv::resize(resized, resized, cv::Size(origImage.cols, origImage.rows)); 
   std::cout << "Writing image to" << image_path << std::endl;
   cv::imwrite(image_path,resized);
+}
+
+void print_results(at::Tensor &result)
+{
+  std::cout << "-----------------------------------------------------------" << "\n";
+  std::cout << std::right << std::setw(24) << "Box" 
+            << std::right << std::setw(24) << "Score"
+            << std::right << std::setw(12) << "Classes" << "\n";
+  std::cout << "-----------------------------------------------------------" << "\n";
+  std::cout << result;
+  std::cout << "-----------------------------------------------------------" << "\n";
+
 }
 
 std::string date_stamp()
