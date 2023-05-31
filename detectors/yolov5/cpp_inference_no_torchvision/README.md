@@ -26,16 +26,10 @@ The critical dependencies for the C++ examples are listed below.  Note that this
     unzip libtorch-cxx11-abi-shared-with-deps-1.12.1+cpu.zip
 
 
-#### Installation instructions for CUDA 11.6 Version
-    
-    wget https://download.pytorch.org/libtorch/cu116/libtorch-cxx11-abi-shared-with-deps-1.12.1%2Bcu116.zip
-    unzip libtorch-cxx11-abi-shared-with-deps-1.12.1+cu116.zip
+#### Installation instructions for X86 CUDA
 
-
-#### Installation instructions for CUDA 11.7 Version
-    
-    wget https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-1.13.0%2Bcu117.zip
-    unzip libtorch-cxx11-abi-shared-with-deps-1.13.0+cu117.zip
+    wget https://download.pytorch.org/libtorch/cu118/libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcu118.zip
+    unzip libtorch-cxx11-abi-shared-with-deps-2.0.1+cu118.zip 
 
 #### Installation instructions for Jetpack 4.6
 https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
@@ -99,13 +93,13 @@ https://qengineering.eu/install-pytorch-on-raspberry-pi-4.html
 sudo sh ../../../setup_scripts/add_latentai_debian_repository.sh
 
 # For CPU Target, install the cpu runtime
-# sudo apt install latentai-runtime-cpu
+# sudo apt install liblre-cpu
 
 # For CUDA Target, install the gpu runtime
-sudo apt install latentai-runtime-cuda
+sudo apt install liblre-cuda
 
 # You will also need to install the runtime development package
-sudo apt install latentai-runtime-dev
+sudo apt install liblre-dev
 ```
 
 ## Inputs
