@@ -15,16 +15,10 @@ include(CMakePrintHelpers) # Helper
 # ---------------------------------PROJECT_NAME----------------------------------------------------------
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_COMPILER /usr/bin/c++)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-O3 -fPIC)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# -------------------------------------------------------------------------------------------
-# Set Common CPP Flags
-# -------------------------------------------------------------------------------------------
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(CppFlags)
 
 # -------------------------------------------------------------------------------------------
 # Output Directories
@@ -32,7 +26,6 @@ include(CppFlags)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/bin)
 cmake_print_variables(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-
 # -------------------------------------------------------------------------------------------
 # Target Declaration
 # -------------------------------------------------------------------------------------------
@@ -44,7 +37,7 @@ add_executable(${PROJECT_NAME} application.cpp ${LRE_SOURCES})
 # Include dirs
 # -------------------------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../utils)
 # -------------------------------------------------------------------------------------------
 # 3rd party Dependencies
 # -------------------------------------------------------------------------------------------
@@ -53,40 +46,34 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 cmake_print_variables(OpenCV_INCLUDE_DIRS)
 
-# # TVM Runtime
+## TVM Runtime
 find_library(TVM_RUNTIME_LIB REQUIRED
-  NAMES libtvm_runtime.so
-  PATHS
-  /usr/local/bin/
-  /usr/tvm/build/
+            NAMES liblre.so
+            PATHS
+            /usr/lib/
 )
 cmake_print_variables(TVM_RUNTIME_LIB)
 
-include_directories(/usr/tvm/include/)
-include_directories(/usr/local/include/)
+include_directories(/usr/include/)
 
 include(FetchContent) # once in the project to include the module
 FetchContent_Declare(dmlccore
-  GIT_REPOSITORY https://github.com/dmlc/dmlc-core.git
-  GIT_TAG 21cc7de0dc9fd6acb796e1be6181fa8e6b6c8f41)
-
+                          GIT_REPOSITORY https://github.com/dmlc/dmlc-core.git
+                          GIT_TAG 09511cf9fe5ff103900a5eafb50870dc84cc17c8)
 if(NOT dmlccore_POPULATED)
   FetchContent_Populate(dmlccore)
 endif()
-
 include_directories(${dmlccore_SOURCE_DIR}/include)
 
 FetchContent_Declare(dlpack
   GIT_REPOSITORY https://github.com/dmlc/dlpack.git
-  GIT_TAG ddeb264880a1fa7e7be238ab3901a810324fbe5f)
-
+  GIT_TAG e2bdd3bee8cb6501558042633fa59144cc8b7f5f)
 if(NOT dlpack_POPULATED)
   FetchContent_Populate(dlpack)
 endif()
-
 include_directories(${dlpack_SOURCE_DIR}/include)
 
-# TORCH
+#TORCH
 find_package(Torch REQUIRED)
 include_directories(${TORCH_INCLUDE_DIRS})
 

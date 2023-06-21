@@ -39,25 +39,38 @@ def main():
     args = parser.parse_args()
 
     sys.path.append(str(Path(args.lre_object) / "latentai.lre"))
+    
     import latentai_runtime
     from representations.boundingboxes.utils import BBFormat
+    import albumentations as A
 
+    pad_transform = A.Compose([
+        A.augmentations.geometric.resize.LongestMaxSize(max_size=640),
+        A.augmentations.geometric.transforms.PadIfNeeded(
+            min_height=640, min_width=640, value=0, border_mode=0)
+    ])
+
+    # Load Model
     m = latentai_runtime.Model()
 
+    # Load Image and Labels
     image = Image.open(args.input_image)
     labels = load_labels(args.labels)
 
+    # Run Inference
     output = m.predict([image])[0]
 
-    rgb_img = image.convert("RGB")
+    # Prediction Visualization
+    pad_transform_img = pad_transform(image=np.array(image))["image"]
+    rgb_img = Image.fromarray(pad_transform_img).convert("RGB")
     out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
+    
     threshold = 0.3
     for bb in output:
         if bb.get_confidence() > threshold:
             print(f"Prediction above {threshold}: {bb}")
             out_im = plot_one_box(
-                bb.get_coordinates(BBFormat.absolute_xyx2y2,
-                                   image_size=rgb_img.size),
+                bb.get_coordinates(bb_format=BBFormat.absolute_xyx2y2),
                 out_im,
                 color=(255, 0, 0),
                 label=labels[bb.get_class_id()],

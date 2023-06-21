@@ -10,44 +10,101 @@
 
 #include "efficientdet_processors.hpp"
 
-#include <sys/time.h>
-#include <experimental/filesystem>
+#include <timer_chrono.hpp>
+#include <image_manipulation.hpp>
+#include <parse_inputs.hpp>
+#include <display_model_metadata.hpp>
+#include <iomanip>
 
-namespace fs = std::experimental::filesystem;
-
+Timer t_preprocessing,t_inference,t_op_transform,t_anchors_gen,t_decoding,t_nms;
 
 int main(int argc, char *argv[]) {
-  struct timeval t0, t1, t2, t3;
-  
-  // Parsing arguments by user
-  std::string model_binary{argv[1]};
-  std::string image_to_infer{argv[2]};
-  std::vector <unsigned char> key;
+  InputParams params;
+  if (!ParseInputs(argc, argv, InputType::Detector, params)) {
+      std::cerr << "Parsing of given command line arguments failed.\n";
+      return 1;
+  }
+
+  std::string model_binary = params.model_binary_path;
+  int iterations = params.iterations;
+  std::string imgPath = params.img_path;
+
   
   // Model Factory
   DLDevice device_t{kDLCUDA, 0}; //Change to kDLCPU if inference target is a CPU 
-  LreModel model(model_binary,key, device_t);
+  LreModel model(model_binary, device_t);
+  PrintModelMetadata(model);
 
-  // Preprocessing
-  gettimeofday(&t0, 0);
-  std::cout << "Image: " << image_to_infer << std::endl;
-  cv::Mat image_input = cv::imread(image_to_infer);
-  cv::Mat processed_image =  preprocess_efficientdet(image_input,cv::Size (model.input_width,model.input_height));
+  std::cout << "Image: " << imgPath << std::endl;
 
-  // Inference
-  gettimeofday(&t1, 0);
-  model.InferOnce(processed_image.data);
-  gettimeofday(&t2, 0);
+  // WarmUp Phase 
+  model.WarmUp(1);
 
-  // Post Processing
-  auto result = postprocess_efficientdet(model.tvm_outputs,cv::Size (model.input_width,model.input_height));
-  gettimeofday(&t3, 0);
-  std::cout << " ----------------Boxes---------------------Scores----Label" << std::endl;
-  std::cout << result[0] << std::endl;
-  draw_boxes(result[0], image_to_infer,model.input_width, model.input_height);
-  std::cout << std::setprecision(2) << std::fixed;
-  std::cout << "Timing: " << (t1.tv_sec - t0.tv_sec) * 1000 + (t1.tv_usec - t0.tv_usec) / 1000.f << " ms pre process" << std::endl;
-  std::cout << "Timing: " << (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000.f << " ms infer + copy image" << std::endl;
-  std::cout << "Timing: " << (t3.tv_sec - t2.tv_sec) * 1000 + (t3.tv_usec - t2.tv_usec) / 1000.f << " ms post process" << std::endl;
-  
+  std::vector<at::Tensor> results;
+
+  // Run pre, inference and post processing x iterations
+  for (int j = 1; j < iterations; j++) {
+    
+    auto imageInput{ReadImage(imgPath)};
+    cv::Scalar background(124, 116, 104);
+    imageInput = resizeAndCenterImage(imageInput, cv::Size (model.input_width,model.input_height), background);
+
+    // Preprocessing
+    t_preprocessing.start();
+    cv::Mat processed_image =  preprocess_efficientdet(imageInput);
+    t_preprocessing.stop();
+
+    // Infer
+    t_inference.start();
+    model.InferOnce(processed_image.data);
+    t_inference.stop();
+
+    /// Post Processing
+    results.clear();
+
+    // Data Transform
+    t_op_transform.start();
+    auto outputs = convert_to_atTensor(model.tvm_outputs);
+    auto clo_bx_in_cls = get_top_classes_and_boxes(outputs);
+    t_op_transform.stop();
+
+    // Generate Anchors
+    t_anchors_gen.start();
+    torch::Tensor anchors = generate_anchors(model.input_height, model.input_width, 3, 7, 3,clo_bx_in_cls["box_outputs_all_after_topk"].device().type());
+    t_anchors_gen.stop();
+
+    int batch_size = outputs[0].sizes()[0];
+
+    // Decode Boxes
+    for (int i = 0; i < batch_size; i++)
+    {
+      t_decoding.start();
+      auto class_out = clo_bx_in_cls["cls_outputs_all_after_topk"][i];
+      auto box_out = clo_bx_in_cls["box_outputs_all_after_topk"][i];
+      auto indices = clo_bx_in_cls["indices_all"][i];
+      auto classes = clo_bx_in_cls["classes_all"][i];
+
+      torch::Tensor anchor_boxes = anchors.index({indices, at::indexing::Slice(0, at::indexing::None)});
+      auto box_out_decoded = decode_box_outputs(box_out, anchor_boxes, true);
+      t_decoding.stop();
+     
+      // NMS
+      t_nms.start();
+      auto detections = vision_nms(box_out_decoded,class_out.sigmoid().squeeze(1),classes);
+      results.emplace_back(detections);
+      t_nms.stop();
+    }
+  }
+
+  print_detections(results[0]);
+  draw_boxes(results[0], imgPath,model.input_width, model.input_height);
+
+  std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Output Data Manipulation Time: " << t_op_transform.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Anchors Generation Time: " << t_anchors_gen.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average Decoding Time: " << t_decoding.averageElapsedMilliseconds() << " ms" << std::endl;
+  std::cout << "Average NMS Time: " << t_nms.averageElapsedMilliseconds() << " ms" << std::endl;
+
+
 }

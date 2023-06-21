@@ -48,15 +48,15 @@ At a minimum, to build your C++ Application, you will need to install the LEIP r
     sudo sh ./setup_scripts/add_latentai_debian_repository.sh
 
     # For CPU Target, install the cpu runtime
-    # sudo apt install latentai-runtime-cpu
+    # sudo apt install liblre-cpu
 
     # For CUDA Target, install the gpu runtime
-    sudo apt install latentai-runtime-cuda
+    sudo apt install liblre-cuda
 
     # You will also need to install the runtime development package
-    sudo apt install latentai-runtime-dev
+    sudo apt install liblre-dev
 
-Note: `latentai-runtime-cuda` expects cuda, cudnn and tensorrt packages to be installed
+Note: `liblre-cuda` expects cuda, cudnn and tensorrt packages to be installed
 
 
 ### CPU Targets

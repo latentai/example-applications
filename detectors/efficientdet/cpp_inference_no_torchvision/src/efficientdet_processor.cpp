@@ -8,7 +8,7 @@
 #include "efficientdet_processors.hpp"
 
 
-cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor)
+cv::Mat resizeAndCenterImage(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor)
 {
   cv::Mat output;
   cv::Mat background(dstSize.width, dstSize.height, CV_32FC3, bgcolor);
@@ -49,12 +49,10 @@ cv::Mat resizeKeepAspectRatio(const cv::Mat &input, const cv::Size &dstSize, con
   return output;
 }
 
-cv::Mat preprocess_efficientdet(cv::Mat &imageInput, cv::Size dstSize)
+cv::Mat preprocess_efficientdet(cv::Mat &imageInput)
 {
 
   cv::cvtColor(imageInput, imageInput, cv::COLOR_BGR2RGB); // RGB Format required
-  cv::Scalar background(124, 116, 104);
-  imageInput = resizeKeepAspectRatio(imageInput, dstSize, background);
   imageInput.convertTo(imageInput, CV_32FC3, 1.f/255.f); // Normalization between 0-1
   cv::subtract(imageInput, cv::Scalar(0.485f, 0.456f, 0.406f), imageInput, cv::noArray(), -1);
   cv::divide(imageInput, cv::Scalar(0.229f, 0.224f, 0.225f), imageInput, 1, -1);
@@ -204,7 +202,7 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
 
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(width,height);
-  cv::Mat image_out = resizeKeepAspectRatio(origImage, dstSize, background);
+  cv::Mat image_out = resizeAndCenterImage(origImage, dstSize, background);
 
   for (int i = 0; i < pred_boxes_x1y1x2y2.sizes()[0]; i++)
   {
@@ -235,70 +233,29 @@ std::vector<torch::Tensor> postprocess_efficientdet(std::vector<DLTensor *> &tvm
   std::vector<torch::Tensor> results;
 
   // conversion of tvm array to tensor
-  std::vector<torch::Tensor> outputs;
-  for (DLTensor *pt : tvm_outputs)
-  {
-    outputs.emplace_back(convert_to_atTensor(pt));
-  }
+  auto outputs = convert_to_atTensor(tvm_outputs);
+  auto clo_bx_in_cls = get_top_classes_and_boxes(outputs);
 
-  std::vector<torch::Tensor> scores;
-  for (int i = 0; i < 5; i++)
-  {
-    scores.push_back(outputs[i]);
-  }
+  torch::Tensor anchors = generate_anchors(dstSize.height, dstSize.width, 3, 7, 3,clo_bx_in_cls["box_outputs_all_after_topk"].device().type());
 
-  std::vector<torch::Tensor> boxes;
-  for (int i = 5; i < 10; i++)
-  {
-    boxes.push_back(outputs[i]);
-  }
+  int batch_size = outputs[0].sizes()[0];
 
-  int batch_size = scores[0].sizes()[0];
-
-  std::vector<torch::Tensor> to_cat_c;
-  for (int level = 0; level < num_levels; level++)
-  {
-    auto t = scores[level].permute({0, 2, 3, 1}).reshape({batch_size, -1, num_classes});
-    to_cat_c.emplace_back(t);
-  }
-  torch::Tensor cls_outputs_all = torch::cat(to_cat_c, 1);
-
-  std::vector<torch::Tensor> to_cat_b;
-  for (int level = 0; level < num_levels; level++)
-  {
-    auto t = boxes[level].permute({0, 2, 3, 1}).reshape({batch_size, -1, 4});
-    to_cat_b.emplace_back(t);
-  }
-  torch::Tensor box_outputs_all = torch::cat(to_cat_b, 1);
-
-  auto cls_topk_indices_all = torch::topk(cls_outputs_all.reshape({batch_size, -1}), max_detection_points, 1);
-
-  auto indices_all = torch::div(std::get<1>(cls_topk_indices_all), num_classes,"trunc");
-  auto classes_all = std::get<1>(cls_topk_indices_all) % num_classes;
-
-  auto box_outputs_all_after_topk = torch::gather(box_outputs_all, 1, indices_all.unsqueeze(2).expand({-1, -1, 4}));
-
-  auto cls_outputs_all_after_topk = torch::gather(cls_outputs_all, 1, indices_all.unsqueeze(2).expand({-1, -1, num_classes}));
-  cls_outputs_all_after_topk = torch::gather(cls_outputs_all_after_topk, 2, classes_all.unsqueeze(2));
-
-  torch::Tensor anchors = generate_anchors(dstSize.height, dstSize.width, 3, 7, 3,box_outputs_all_after_topk.device().type());
-
-  torch::Tensor detections;
 
   for (int i = 0; i < batch_size; i++)
   {
-    auto class_out = cls_outputs_all_after_topk[i];
-    auto box_out = box_outputs_all_after_topk[i];
-    auto indices = indices_all[i];
-    auto classes = classes_all[i];
+    torch::Tensor detections;
 
+    auto class_out = clo_bx_in_cls["cls_outputs_all_after_topk"][i];
+    auto box_out = clo_bx_in_cls["box_outputs_all_after_topk"][i];
+    auto indices = clo_bx_in_cls["indices_all"][i];
+    auto classes = clo_bx_in_cls["classes_all"][i];
 
     torch::Tensor anchor_boxes = anchors.index({indices, at::indexing::Slice(0, at::indexing::None)});
 
     auto box_out_decoded = decode_box_outputs(box_out, anchor_boxes, true);
 
     auto scores = class_out.sigmoid().squeeze(1); 
-    auto result = hard_nms(box_out_decoded, scores, 0.45, -1, 200, classes);
+    auto result = hard_nms(box_out_decoded, scores, classes, 0.45, -1, 200);
     auto filter = at::where(result.index({"...",4}) > prediction_confidence_threshold);
 
     results.emplace_back(result.index({filter[0]}));
@@ -306,17 +263,23 @@ std::vector<torch::Tensor> postprocess_efficientdet(std::vector<DLTensor *> &tvm
   return results;
 }
 
-at::Tensor convert_to_atTensor(DLTensor *tvm_output)
+std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors)
 {
-  DLManagedTensor *output = new DLManagedTensor{};
-  output->dl_tensor = *tvm_output;
-  output->deleter = &monly_deleter;
-  at::Tensor res = at::fromDLPack(output);
-  return res;
+  std::vector<at::Tensor> atTensors;
+  for (int i = 0; i < dLTensors.size() ; i++){
+
+    DLManagedTensor* output = new DLManagedTensor{};
+    output->dl_tensor = *dLTensors[i];
+    output->deleter = &monly_deleter;
+
+    auto op = at::fromDLPack(output);
+    atTensors.emplace_back(op);
+  }
+  return atTensors;
 }
 
 
-at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores, float iou_threshold, int top_k, int candidates_size, at::Tensor classes)
+at::Tensor hard_nms(at::Tensor select_boxes, at::Tensor scores, at::Tensor classes, float iou_threshold, int top_k, int candidates_size)
 {
 
   std::tuple<at::Tensor, at::Tensor> sorted_scores;
@@ -397,4 +360,67 @@ std::string date_stamp()
 	std::strftime(date_string, 50, "%B_%d_%Y_%T", curr_tm);
   
   return date_string;
+}
+
+std::map<std::string, at::Tensor> get_top_classes_and_boxes(std::vector<torch::Tensor> outputs, int NUM_LEVELS, int NUM_CLASSES, int MAX_DETECTION_POINTS)
+{
+
+  std::vector<torch::Tensor> scores;
+  for (int i = 0; i < 5; i++)
+  {
+    scores.push_back(outputs[i]);
+  }
+
+  std::vector<torch::Tensor> boxes;
+  for (int i = 5; i < 10; i++)
+  {
+    boxes.push_back(outputs[i]);
+  }
+  int batch_size = scores[0].sizes()[0];
+
+  std::vector<torch::Tensor> to_cat_c;
+  for (int level = 0; level < NUM_LEVELS; level++)
+  {
+    auto t = scores[level].permute({0, 2, 3, 1}).reshape({batch_size, -1, NUM_CLASSES});
+    to_cat_c.emplace_back(t);
+  }
+  torch::Tensor cls_outputs_all = torch::cat(to_cat_c, 1);
+
+  std::vector<torch::Tensor> to_cat_b;
+  for (int level = 0; level < NUM_LEVELS; level++)
+  {
+    auto t = boxes[level].permute({0, 2, 3, 1}).reshape({batch_size, -1, 4});
+    to_cat_b.emplace_back(t);
+  }
+
+  torch::Tensor box_outputs_all = torch::cat(to_cat_b, 1);
+
+  auto cls_topk_indices_all = torch::topk(cls_outputs_all.reshape({batch_size, -1}), MAX_DETECTION_POINTS, 1);
+  auto indices_all = torch::div(std::get<1>(cls_topk_indices_all), NUM_CLASSES,"trunc");
+  auto classes_all = std::get<1>(cls_topk_indices_all) % NUM_CLASSES;
+  auto box_outputs_all_after_topk = torch::gather(box_outputs_all, 1, indices_all.unsqueeze(2).expand({-1, -1, 4}));
+  auto cls_outputs_all_after_topk = torch::gather(cls_outputs_all, 1, indices_all.unsqueeze(2).expand({-1, -1, NUM_CLASSES}));
+  cls_outputs_all_after_topk = torch::gather(cls_outputs_all_after_topk, 2, classes_all.unsqueeze(2));
+
+  std::map<std::string, at::Tensor> op;
+
+  op["cls_outputs_all_after_topk"] = cls_outputs_all_after_topk;
+  op["box_outputs_all_after_topk"] = box_outputs_all_after_topk;
+  op["indices_all"] = indices_all;
+  op["classes_all"] = classes_all;
+
+  return op;
+
+}
+
+
+void print_detections(at::Tensor detections)
+{
+  std::cout << "-----------------------------------------------------------" << "\n";
+  std::cout << std::right << std::setw(24) << "Box" 
+            << std::right << std::setw(24) << "Score"
+            << std::right << std::setw(10) << "Class" << "\n";
+  std::cout << "-----------------------------------------------------------" << "\n";
+  std::cout << detections << "\n";
+  std::cout << "-----------------------------------------------------------" << "\n";
 }

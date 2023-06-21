@@ -26,12 +26,12 @@ cd ..
 
 # FP32
 mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so  ../../../sample_images/bus.jpg
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../../sample_images/bus.jpg
 
 # FP16
 mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so  ../../../sample_images/bus.jpg
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../../sample_images/bus.jpg
 
 # INT8
 mkdir -p $INT8_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so  ../../../sample_images/bus.jpg
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../../sample_images/bus.jpg
