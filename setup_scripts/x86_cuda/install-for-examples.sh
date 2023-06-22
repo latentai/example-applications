@@ -1,6 +1,14 @@
 #!/bin/bash
 
-bash ../add_latentai_debian_repository.sh
+if [ ! -f /etc/apt/sources.list.d/latentai-stable.list ]; then
+    echo "Error: Add latentai apt repo before running this script."
+    echo ""
+    echo "Example:"
+    echo " wget -qO - https://public.latentai.io/add_apt_repository | sudo bash"
+    echo " sudo apt update"
+    exit
+fi
+
 apt update
 
 apt install -y libopencv-dev
