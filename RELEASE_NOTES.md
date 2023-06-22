@@ -32,7 +32,7 @@
             | Software           | Version  |
             | ------------------ | -------- |
             | latentai-runtime   | 2.8      |
-            | Python             | 3.6      |
+            | Python             | 3.9      |
             | setuptools         | 4.5.4.6  |
             | CMake              | 3.10.2   |
             | PyTorch            | 1.13.0   |
