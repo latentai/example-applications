@@ -84,4 +84,4 @@ modelLibrary.so: Model file generated using the LatentAI's SDK
 Image          : Image file to be processed
 ```
 ### Usage
-bin/application path/to/modelLibrary.so number_of_iterations path/to/images_directory 
+bin/application path/to/modelLibrary.so number_of_iterations path/to/image_file
