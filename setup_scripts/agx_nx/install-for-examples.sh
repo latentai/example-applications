@@ -24,7 +24,7 @@ sudo apt update
 
 sudo apt install -y libopencv-dev
 sudo apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
-sudo apt install -y liblre-cuda liblre-dev
+sudo apt install -y latentai-runtime-cuda latentai-runtime-dev
 
 pip3 install --upgrade pip
 pip3 install testresources
