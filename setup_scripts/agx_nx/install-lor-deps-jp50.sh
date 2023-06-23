@@ -2,6 +2,15 @@
 
 TORCH_URL=https://developer.download.nvidia.com/compute/redist/jp/v51/pytorch/torch-2.0.0a0+8aa34602.nv23.03-cp38-cp38-linux_aarch64.whl
 
+if [ ! -f /etc/apt/sources.list.d/latentai-stable.list ]; then
+    echo "Error: Add latentai apt repo before running this script."
+    echo ""
+    echo "Example:"
+    echo " wget -qO - https://public.latentai.io/add_apt_repository | sudo bash"
+    echo " sudo apt update"
+    exit
+fi
+
 # Check if nvcc is added to path
 CUDA_PATH="/usr/local/cuda"
 BASHRC_PATH="$HOME/.bashrc"
@@ -71,3 +80,6 @@ pip3 install huggingface-hub==0.4.0
 pip3 install omegaconf
 pip3 install pycocotools
 pip3 install --no-deps effdet==0.2.4
+
+# Install Latent AI LRE packages
+sudo apt install -y liblre-cuda liblre-dev
