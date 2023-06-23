@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [ ! -f /etc/apt/sources.list.d/latentai-stable.list ]; then
+    echo "Error: Add latentai apt repo before running this script."
+    echo ""
+    echo "Example:"
+    echo " wget -qO - https://public.latentai.io/add_apt_repository | sudo bash"
+    echo " sudo apt update"
+    exit
+fi
+
 sudo apt update -y
 sudo apt upgrade -y
 pip3 install Cython
@@ -22,6 +31,9 @@ rm torchvision-0.14.0a0+5ce4506-cp39-cp39-linux_aarch64.whl
 
 # This is only needed for EfficientDet
 pip3 install effdet
+
+# Installing LRE packages now required for LOR as well as examples
+sudo apt install -y liblre-cpu liblre-dev
 
 echo
 echo Suggest you add the following to .bash_profile:
