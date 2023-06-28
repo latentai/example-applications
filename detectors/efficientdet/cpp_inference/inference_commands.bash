@@ -16,10 +16,26 @@ then
     INT8_MODEL=$MODEL_PATH/Int8-optimize
 fi
 
+# Current known issue: These applications require a different libtorch
+# (libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcu118.zip) installed that
+# differs from the SDK version of libtorch.  The workaround is to install
+# this version in the home directory for linking with the example
+# applications when running in the SDK docker container.  This is the
+# reason for the following workaround:
+
+if [ -d ~/.torch-apps/libtorch ]
+then
+    TORCH_PATH=~/.torch-apps/libtorch
+else
+    TORCH_PATH=`python3 -c 'import torch;print(torch.utils.cmake_prefix_path)'`
+fi
+echo $TORCH_PATH
+
+
 # Compile
 mkdir build
 cd build
-cmake -DCMAKE_PREFIX_PATH=`python3 -c 'import torch;print(torch.utils.cmake_prefix_path)'` ..
+cmake -DCMAKE_PREFIX_PATH=$TORCH_PATH ..
 make -j 8
 cd ..
 
