@@ -7,7 +7,7 @@ some additional dependencies such as `torch` and `torchvision`.  This directory 
 and can be run using the following:
 
 1. Add the Latent AI apt server:<br>
-`wget -qO - https://public.latentai.io/add_apt_repository | sudo bash`
+`wget -qO - https://public.latentai.io/add_apt_repository | bash`
 2. Install the additional dependencies for the example applications using:<br>
 `./install-for-examples.sh`
 
