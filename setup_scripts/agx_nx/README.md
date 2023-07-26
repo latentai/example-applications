@@ -3,7 +3,7 @@ This directory includes several scripts for setting up Jetpack devices to use th
 
 The following are the recommended steps to using these install scripts:
 
-1. Start with a fresh install of Jetpack by reflashing your device according to the [Nvidia Developer Kit instructions](https://developer.nvidia.com/embedded/jetpack).
+1. Start with a fresh install of Jetpack by reflashing your device according to the [Nvidia Developer Kit instructions](https://developer.nvidia.com/embedded/jetpack).  *CAUTION:* if you attempt these steps on anything other than a fresh install, at the very least remove any existing `latentai` entries from `/etc/apt/sources.list.d` before proceeding to the next step.
 2. Add the Latent AI apt server:<br>
 `wget -qO - https://public.latentai.io/add_apt_repository | sudo bash`
 3. Install the following Latent AI LOR dependency install script:<br>
