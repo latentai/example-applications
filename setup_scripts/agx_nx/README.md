@@ -12,7 +12,7 @@ The following are the recommended steps to using these install scripts:
 4. Copy the appropriate LOR server from the LEIP SDK `/latentai/packages/` directory to the target device
 5. Install the LOR using:<br>
 `pip3 install <LOR.whl file>`
-7. Install the additional dependencies for the example applications using:<br>
+7. SKIP THIS STEP FOR JETPACK 5: Install the additional dependencies for the example applications using:<br>
 `./install-for-examples.sh`
 
 ## Customizing this process
