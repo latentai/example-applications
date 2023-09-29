@@ -39,128 +39,13 @@ cv::Mat preprocess_efficientdet(cv::Mat &imageInput)
   return imageInput;
 }
 
-torch::Tensor decode_box_outputs(torch::Tensor rel_codes, torch::Tensor anchors, bool output_xyxy)
-{
-  auto ycenter_a = (anchors.index({"...",0}) + anchors.index({"...",2})) / 2;
-  auto xcenter_a = (anchors.index({"...",1}) + anchors.index({"...",3})) / 2;
-
-  auto ha = (anchors.index({"...",2}) - anchors.index({"...",0}));
-  auto wa = (anchors.index({"...",3}) - anchors.index({"...",1}));
-
-  std::vector<torch::Tensor> t = rel_codes.unbind(1);
-  auto ty = t[0];
-  auto tx = t[1];
-  auto th = t[2];
-  auto tw = t[3];
-
-  // Dimensions
-  tx.mul_(wa).add_(xcenter_a);
-  ty.mul_(ha).add_(ycenter_a);
-  tw.exp_().mul_(wa);
-  th.exp_().mul_(ha);
-
-  auto ymin = ty - th / 2.0;
-  auto xmin = tx - tw / 2.0;
-  auto ymax = ty + th / 2.0;
-  auto xmax = tx + tw / 2.0;
-
-  return torch::stack({xmin, ymin, xmax, ymax}, 1);
-}
-
-
+/*
 torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size)
 {
   boxes = boxes.clamp(0);
   auto sz = torch::cat({size, size}, 0);
   boxes = boxes.min(sz);
   return boxes;
-}
-
-torch::Tensor generate_anchors(int WIDTH, int HEIGHT, int min_level, int max_level, int num_scales,c10::DeviceType infer_device)
-{
-
-  float anchor_scale = 4.0;
-  std::vector<std::pair<float, float>> aspect_ratios = {{1, 1}, {1.4, 0.7}, {0.7, 1.4}};
-  std::pair<int, int> image_size = {HEIGHT, WIDTH};
-  std::pair<int, int> feat_size = image_size;
-  torch::Tensor anchor_scales = torch::ones(max_level - min_level + 1) * anchor_scale;
-
-  std::vector<std::pair<int, int>> feat_sizes;
-  feat_sizes.push_back(feat_size);
-  for (int i = 1; i < (max_level + 1); i++)
-  {
-    feat_size.first = floor((feat_size.first - 1) / 2) + 1;
-    feat_size.second = floor((feat_size.second - 1) / 2) + 1;
-    feat_sizes.push_back(feat_size);
-  }
-
-  std::map<int, std::vector<std::vector<float>>> anchor_configs;
-
-  for (int level = min_level; level < max_level + 1; level++)
-  {
-    std::vector<std::vector<float>> lconf;
-    for (int scale_octave = 0; scale_octave < num_scales; scale_octave++)
-    {
-      for (auto aspect : aspect_ratios)
-      {
-        std::vector<float> conf;
-        conf.push_back(feat_sizes[0].first * 1.f / feat_sizes[level].first);
-        conf.push_back(feat_sizes[0].second * 1.f / feat_sizes[level].first);
-        conf.push_back((scale_octave * 1.f) / num_scales);
-        conf.push_back(aspect.first);
-        conf.push_back(aspect.second);
-        conf.push_back(anchor_scales[level - min_level].item().toFloat() * 1.f);
-        lconf.push_back(conf);
-        conf.clear();
-      }
-    }
-    anchor_configs[level] = lconf;
-    lconf.clear();
-  }
-
-  std::vector<torch::Tensor> boxes_all;
-  for (auto configs : anchor_configs)
-  {
-    std::vector<torch::Tensor> boxes_level;
-    for (auto item : configs.second)
-    {
-      float stride[] = {item[0], item[1]};
-      float octave_scale = item[2];
-      float aspect_x = item[3];
-      float aspect_y = item[4];
-      float anchor_scale = item[5];
-
-      float base_anchor_size_x = anchor_scale * stride[1] * pow(2, octave_scale);
-      float base_anchor_size_y = anchor_scale * stride[0] * pow(2, octave_scale);
-      
-      float anchor_size_x_2 = base_anchor_size_x * aspect_x / 2.0;
-      float anchor_size_y_2 = base_anchor_size_y * aspect_y / 2.0;
-
-      auto _x = torch::arange(stride[1] / 2, image_size.second, stride[1], infer_device);
-      auto _y = torch::arange(stride[0] / 2, image_size.first, stride[0], infer_device);
-
-      std::vector<torch::Tensor> xyv;
-      xyv = torch::meshgrid({_x, _y}, "xy");
-
-      xyv[0] = xyv[0].reshape(-1);
-      xyv[1] = xyv[1].reshape(-1);
-
-      torch::Tensor boxes = torch::vstack({xyv[1] - anchor_size_y_2, xyv[0] - anchor_size_x_2,
-                                           xyv[1] + anchor_size_y_2, xyv[0] + anchor_size_x_2});
-
-      boxes = boxes.swapaxes(0, 1);
-      boxes = torch::unsqueeze(boxes, 1); //???
-      boxes_level.push_back(boxes);
-    }
-    torch::Tensor boxes_level_a = torch::concat(boxes_level, 1);
-
-    boxes_all.push_back(boxes_level_a.reshape({-1, 4}));
-    boxes_level.clear();
-  }
-
-  torch::Tensor anchor_boxes = torch::vstack(boxes_all);
-
-  return anchor_boxes;
 }
 
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float WIDTH, float HEIGHT)
@@ -198,8 +83,6 @@ std::vector<torch::Tensor> postprocess_efficientdet(std::vector<DLTensor *> &tvm
   auto outputs = convert_to_atTensor(tvm_outputs);
   auto clo_bx_in_cls = get_top_classes_and_boxes(outputs);
 
-  torch::Tensor anchors = generate_anchors(dstSize.height, dstSize.width, 3, 7, 3,clo_bx_in_cls["box_outputs_all_after_topk"].device().type());
-
   int batch_size = outputs[0].sizes()[0];
 
   for (int i = 0; i < batch_size; i++)
@@ -232,22 +115,82 @@ std::vector<torch::Tensor> postprocess_efficientdet(std::vector<DLTensor *> &tvm
   }
   return results;
 }
-
-std::vector<at::Tensor> convert_to_atTensor(std::vector<DLTensor *> &dLTensors)
+*/
+at::Tensor convert_to_atTensor(DLTensor *dLTensor)
 {
-  std::vector<at::Tensor> atTensors;
-  for (int i = 0; i < dLTensors.size() ; i++){
 
-    DLManagedTensor* output = new DLManagedTensor{};
-    output->dl_tensor = *dLTensors[i];
-    output->deleter = &monly_deleter;
+  DLManagedTensor* output = new DLManagedTensor{};
+  output->dl_tensor = *dLTensor;
+  output->deleter = &monly_deleter;
 
-    auto op = at::fromDLPack(output);
-    atTensors.emplace_back(op);
-  }
-  return atTensors;
+  auto op = at::fromDLPack(output);
+  return op;
 }
 
+at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold)
+{
+  if(boxes.numel() == 0)
+  {
+    return at::empty({0}, at::kFloat).to(boxes.device());
+  }
+
+  auto max_coordinate = boxes.max();
+  auto offsets =  classes * (max_coordinate + at::ones({1}).to(boxes.device()));
+  auto boxes_for_nms = boxes + offsets.index({at::indexing::Slice(), at::indexing::None});
+  auto result = vision::ops::nms(boxes_for_nms,scores,iou_threshold);
+
+  return result;
+
+}
+
+std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output)
+{
+  std::map<std::string, at::Tensor> effdet_tensors_;
+
+  effdet_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
+
+  std::cout << effdet_tensors_["boxes"].sizes() << std::endl; 
+  effdet_tensors_["classes"] = output.index({at::indexing::Slice(),4});
+    std::cout << effdet_tensors_["classes"].sizes() << std::endl; 
+
+  effdet_tensors_["scores"] = output.index({at::indexing::Slice(),5});
+
+  return effdet_tensors_;
+}
+
+std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output)
+{
+  std::map<std::string, at::Tensor> yolo_tensors_;
+
+  yolo_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
+
+    std::cout << yolo_tensors_["boxes"].sizes() << std::endl;
+
+
+  auto class_scores = output.index({at::indexing::Slice(),at::indexing::Slice(4,at::indexing::None)});
+
+  std::cout << class_scores.sizes() << std::endl;
+
+  // Find the indices of the maximum values along dimension 2
+  yolo_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(torch::kFloat32);;
+
+  std::cout << yolo_tensors_["classes"].sizes() << std::endl;
+
+
+  std::cout << yolo_tensors_["classes"].sizes() << std::endl;
+
+
+  // Find the maximum values along dimension 1
+  yolo_tensors_["scores"] = std::get<0>(class_scores.max(1));
+
+    std::cout << yolo_tensors_["scores"].sizes() << std::endl;
+
+
+  return yolo_tensors_;
+}
+
+
+/*
 
 std::string date_stamp()
 {
@@ -261,56 +204,6 @@ std::string date_stamp()
   return date_string;
 }
 
-std::map<std::string, at::Tensor> get_top_classes_and_boxes(std::vector<torch::Tensor> outputs, int NUM_LEVELS, int NUM_CLASSES, int MAX_DETECTION_POINTS)
-{
-
-  std::vector<torch::Tensor> scores;
-  for (int i = 0; i < 5; i++)
-  {
-    scores.push_back(outputs[i]);
-  }
-
-  std::vector<torch::Tensor> boxes;
-  for (int i = 5; i < 10; i++)
-  {
-    boxes.push_back(outputs[i]);
-  }
-  int batch_size = scores[0].sizes()[0];
-
-  std::vector<torch::Tensor> to_cat_c;
-  for (int level = 0; level < NUM_LEVELS; level++)
-  {
-    auto t = scores[level].permute({0, 2, 3, 1}).reshape({batch_size, -1, NUM_CLASSES});
-    to_cat_c.emplace_back(t);
-  }
-  torch::Tensor cls_outputs_all = torch::cat(to_cat_c, 1);
-
-  std::vector<torch::Tensor> to_cat_b;
-  for (int level = 0; level < NUM_LEVELS; level++)
-  {
-    auto t = boxes[level].permute({0, 2, 3, 1}).reshape({batch_size, -1, 4});
-    to_cat_b.emplace_back(t);
-  }
-
-  torch::Tensor box_outputs_all = torch::cat(to_cat_b, 1);
-
-  auto cls_topk_indices_all = torch::topk(cls_outputs_all.reshape({batch_size, -1}), MAX_DETECTION_POINTS, 1);
-  auto indices_all = torch::div(std::get<1>(cls_topk_indices_all), NUM_CLASSES,"trunc");
-  auto classes_all = std::get<1>(cls_topk_indices_all) % NUM_CLASSES;
-  auto box_outputs_all_after_topk = torch::gather(box_outputs_all, 1, indices_all.unsqueeze(2).expand({-1, -1, 4}));
-  auto cls_outputs_all_after_topk = torch::gather(cls_outputs_all, 1, indices_all.unsqueeze(2).expand({-1, -1, NUM_CLASSES}));
-  cls_outputs_all_after_topk = torch::gather(cls_outputs_all_after_topk, 2, classes_all.unsqueeze(2));
-
-  std::map<std::string, at::Tensor> op;
-
-  op["cls_outputs_all_after_topk"] = cls_outputs_all_after_topk;
-  op["box_outputs_all_after_topk"] = box_outputs_all_after_topk;
-  op["indices_all"] = indices_all;
-  op["classes_all"] = classes_all;
-
-  return op;
-
-}
 
 torch::Tensor vision_nms(at::Tensor box_out_decoded,at::Tensor scores, at::Tensor classes, float iou_threshold, float confidence_threshold, int max_det_per_image)
 {
@@ -340,3 +233,5 @@ void print_detections(at::Tensor detections)
   std::cout << detections << "\n";
   std::cout << "-----------------------------------------------------------" << "\n";
 }
+
+*/
