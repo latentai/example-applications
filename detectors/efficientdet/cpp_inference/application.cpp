@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     
     auto imageInput{ReadImage(imgPath)};
     cv::Scalar background(124, 116, 104);
-    imageInput = resizeAndCenterImage(imageInput, cv::Size (model.input_width,model.input_height), background);
+    imageInput = ResizeImage(imageInput, model.input_width,model.input_height);
 
     // Preprocessing
     t_preprocessing.start();
@@ -64,14 +64,13 @@ int main(int argc, char *argv[]) {
     auto outputs = convert_to_atTensor(model.tvm_outputs[0]);
     t_op_transform.stop();
 
-    std::cout << outputs.sizes() << std::endl; 
-    auto tensors_ = yolo_tensors(outputs[0]);
+    auto tensors_ = ssd_tensors(outputs[0],model.input_width,model.input_height);
 
     // NMS from Torchvision 
     auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"],0.45);
 
     // TopK Filter
-    // result = result.slice(0,0,100);
+    result = result.slice(0,0,100);
 
     tensors_["boxes"] = tensors_["boxes"].index({result});
     tensors_["classes"] = tensors_["classes"].index({result,at::indexing::None});
@@ -79,7 +78,7 @@ int main(int argc, char *argv[]) {
     auto detections = at::cat({tensors_["boxes"],tensors_["scores"],tensors_["classes"]},1);
 
     // Confidence Threshold Filter 
-    auto filtered_detections = at::where(detections.index({"...",4}) > 0.1);
+    auto filtered_detections = at::where(detections.index({"...",4}) > 0.3);
     detections = detections.index({filtered_detections[0]});
 
     std::cout << detections << std::endl;

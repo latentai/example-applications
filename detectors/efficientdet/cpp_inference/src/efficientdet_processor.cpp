@@ -32,12 +32,20 @@ cv::Mat preprocess_efficientdet(cv::Mat &imageInput)
 {
   cv::cvtColor(imageInput, imageInput, cv::COLOR_BGR2RGB); // RGB Format required
   imageInput.convertTo(imageInput, CV_32FC3, 1.f/255.f); // Normalization between 0-1
-  cv::subtract(imageInput, cv::Scalar(0.485f, 0.456f, 0.406f), imageInput, cv::noArray(), -1);
-  cv::divide(imageInput, cv::Scalar(0.229f, 0.224f, 0.225f), imageInput, 1, -1);
+  cv::subtract(imageInput, cv::Scalar(0.485f, 0.456f, 0.406f), imageInput, cv::noArray(), -1); //mean
+  cv::divide(imageInput, cv::Scalar(0.229f, 0.224f, 0.225f), imageInput, 1, -1); //std
   cv::dnn::blobFromImage(imageInput, imageInput); // convert to nchw
 
   return imageInput;
 }
+
+cv::Mat preprocess_yolo(cv::Mat &ImageInput) {
+  cv::cvtColor(ImageInput, ImageInput, cv::COLOR_BGR2RGB);  // RGB Format required
+  ImageInput.convertTo(ImageInput, CV_32FC3, 1.f / 255);  // Convert to float ranges 0-1
+  cv::dnn::blobFromImage(ImageInput, ImageInput);  // NHWC to NCHW
+  return ImageInput;
+}
+
 
 /*
 torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size)
@@ -164,29 +172,36 @@ std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output)
 
   yolo_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
 
-    std::cout << yolo_tensors_["boxes"].sizes() << std::endl;
-
-
   auto class_scores = output.index({at::indexing::Slice(),at::indexing::Slice(4,at::indexing::None)});
 
-  std::cout << class_scores.sizes() << std::endl;
-
-  // Find the indices of the maximum values along dimension 2
-  yolo_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(torch::kFloat32);;
-
-  std::cout << yolo_tensors_["classes"].sizes() << std::endl;
-
-
-  std::cout << yolo_tensors_["classes"].sizes() << std::endl;
-
-
-  // Find the maximum values along dimension 1
+  yolo_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(torch::kFloat32);
   yolo_tensors_["scores"] = std::get<0>(class_scores.max(1));
-
-    std::cout << yolo_tensors_["scores"].sizes() << std::endl;
 
 
   return yolo_tensors_;
+}
+
+std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int height)
+{
+  std::map<std::string, at::Tensor> ssd_tensors_;
+  at::Tensor scale_tensor = at::empty(4);
+  scale_tensor = scale_tensor.to(output.device());
+
+  scale_tensor[0] = width; scale_tensor[2] = width;
+  scale_tensor[1] = height; scale_tensor[3] = height;
+
+  std::cout << scale_tensor << std::endl;
+
+
+  ssd_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)}) * scale_tensor;
+
+  auto class_scores = output.index({at::indexing::Slice(),at::indexing::Slice(5,at::indexing::None)});
+
+  ssd_tensors_["classes"] = std::get<1>(class_scores.max(1));
+  ssd_tensors_["scores"] = std::get<0>(class_scores.max(1));
+
+
+  return ssd_tensors_;
 }
 
 

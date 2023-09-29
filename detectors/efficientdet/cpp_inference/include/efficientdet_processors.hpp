@@ -38,12 +38,14 @@ static void monly_deleter(DLManagedTensor* self) { delete self; }
 
 cv::Mat resizeAndCenterImage(const cv::Mat &input, const cv::Size &dstSize, const cv::Scalar &bgcolor);
 cv::Mat preprocess_efficientdet(cv::Mat &imageInput);
+cv::Mat preprocess_yolo(cv::Mat &ImageInput);
 
 at::Tensor convert_to_atTensor(DLTensor* dLTensor);
 at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold);
 
 std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output);
 std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output);
+std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int height);
 
 
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
