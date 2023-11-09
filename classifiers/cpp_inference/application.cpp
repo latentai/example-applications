@@ -5,7 +5,7 @@
 // and is released under the Apache 2.0 License.
 // *****************************************************************************/
 
-#include <tvm/runtime/latentai/lre_model.hpp>
+#include <tvm/runtime/latentai/lre.hpp>
 #include <tvm/runtime/latentai/lre_cryption_service.hpp>
 #include "imagenet_torch_nchw_processors.hpp"
 
@@ -23,19 +23,20 @@ int main(int argc, char *argv[]) {
       return 1;
   }
 
-  std::string model_binary = params.model_binary_path;
+  std::string path_to_model = params.model_binary_path;
   int iterations = params.iterations;
   std::string img_path = params.img_path;
   std::string label_file_name = params.label_file_path;
 
 
-  // Model Factory
-  DLDevice device_t{kDLCUDA, 0}; // If running in CPU change to kDLCPU
-  LreModel model(model_binary, device_t);
-  PrintModelMetadata(model);
+  // Model Factory 
+  LRE::LatentRuntimeEngine model_runtime(path_to_model);
+
+  // PrintModelMetadata(model);
+  std::cout << model_runtime.getInputShapes() << std::endl;
   
   // WarmUp Phase 
-  model.WarmUp(1);
+  model_runtime.warmUp(1);
 
   std::pair<float, float> top_one;
 
@@ -43,18 +44,20 @@ int main(int argc, char *argv[]) {
   for (int i = 1; i < iterations; i++) {
 
     auto image_input{ReadImage(img_path)};
-    auto resized_image = ResizeImage(image_input, model.input_width, model.input_height);
+    auto resized_image = ResizeImage(image_input, 224, 224); //TODO: Parse from the string getInputShapes()  
 
     t_preprocessing.start();
     cv::Mat processed_image = preprocess_imagenet_torch_nchw(resized_image);
     t_postprocessing.stop();
 
     t_inference.start();
-    model.InferOnce(processed_image.data);
+    model.infer(processed_image.data);
     t_inference.stop();
 
     t_postprocessing.start();
-    top_one = postprocess_top_one(model.tvm_outputs, model.output_size);
+    auto op{model_runtime.getOutputs()};
+    auto no{model_runtime.getOutputSizes()};
+    top_one = postprocess_top_one(op, no);
     t_postprocessing.stop();
 
   }
