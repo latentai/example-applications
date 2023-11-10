@@ -6,16 +6,22 @@
 # *****************************************************************************/
 
 #!/usr/bin/env python
+import numpy as np
+import torch.nn.functional as F
+import torch as T
+import torchvision.transforms as transforms
+from PIL import Image
+import math
 
 def main():
     import sys
     from argparse import ArgumentParser
     from pathlib import Path
 
-    from PIL import Image
+    from pylre import LatentRuntimeEngine
 
     parser = ArgumentParser(description="Run inference")
-    parser.add_argument("--lre_object", type=str, default=".", help="Path to LRE object directory.")
+    parser.add_argument("--model", type=str, default=".", help="Path to LRE object directory.")
     parser.add_argument(
         "--input_image",
         type=str,
@@ -30,23 +36,83 @@ def main():
     )
     args = parser.parse_args()
 
-    sys.path.append(str(Path(args.lre_object) / "latentai.lre"))
-    import latentai_runtime
+    # Model Factory
+    m = LatentRuntimeEngine(str(Path(args.model) / "modelLibrary.so"))
+    print(m.get_metadata())
 
-    m = latentai_runtime.Model()
+    # WarmUp Phase
+    m.warm_up(1)
+    
+    # Load the image using PIL (Python Imaging Library)
+    input_image_path = args.input_image
+    image = Image.open(input_image_path)
+    image_size = (224, 224)
+    resize_transform = transforms.Resize(image_size)
+    resized_image = resize_transform(image)
+    normalize_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    # Apply the normalization transformation
+    resized_image_normalized = normalize_transform(resized_image)
 
-    image = Image.open(args.input_image)
-    labels = load_labels(args.labels)
-
-    prediction = m.predict([image])[0][0]
-
-    print("Predicted =>", labels[prediction.class_id], prediction.confidence)
+    # Run inference
+    m.infer(resized_image_normalized)
+    
+    # Post-process    
+    output = m.get_outputs()
+    print(output)
+    op = postprocess_top_one(output)
+    print_top_one(op, args.labels)
 
 
 def load_labels(path):
     with open(path, "r") as f:
         return f.read().strip().split("\n")
+    
+def postprocess_top_one(values):
+    # Apply softmax function to the data
+    # values = softmax(values)
+    
+    max_value = max(values)
+    top_one_index = values.index(max_value)
+    top_one = (top_one_index, max_value )
+    print(top_one)
+    
+    return top_one
 
+def print_top_one(top_one, label_file_name):
+    with open(label_file_name, 'r') as label_file:
+        lines = label_file.readlines()
+
+    if top_one[0] >= 0 and top_one[0] < len(lines):
+        label = lines[int(top_one[0])].strip()
+    else:
+        label = "Unknown Label"
+
+    print(" ------------------------------------------------------------ ")
+    print(" Detections ")
+    print(" ------------------------------------------------------------ ")
+    print(f" The image prediction result is: id {top_one[0]}")
+    print(f" Name: {label}")
+    print(f" Score: {top_one[1]}")
+    print(" ------------------------------------------------------------ ")
+
+def softmax(v):
+    result = []
+    total = 0.0
+
+    # Compute the exponential of each element and the sum of all exponentials
+    for x in v:
+        exp_x = math.exp(x)
+        result.append(exp_x)
+        total += exp_x
+
+    # Normalize the exponentials to get the softmax probabilities
+    for i in range(len(result)):
+        result[i] /= total
+
+    return result
 
 if __name__ == "__main__":
     main()

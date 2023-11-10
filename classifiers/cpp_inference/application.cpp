@@ -32,8 +32,7 @@ int main(int argc, char *argv[]) {
   // Model Factory 
   LRE::LatentRuntimeEngine model_runtime(path_to_model);
 
-  // PrintModelMetadata(model);
-  std::cout << model_runtime.getInputShapes() << std::endl;
+  PrintModelMetadata(model_runtime);
   
   // WarmUp Phase 
   model_runtime.warmUp(1);
@@ -51,13 +50,13 @@ int main(int argc, char *argv[]) {
     t_postprocessing.stop();
 
     t_inference.start();
-    model.infer(processed_image.data);
+    model_runtime.infer(processed_image.data);
     t_inference.stop();
 
+    auto output{model_runtime.getOutputs()};
+    auto sizes{model_runtime.getOutputSizes()};
     t_postprocessing.start();
-    auto op{model_runtime.getOutputs()};
-    auto no{model_runtime.getOutputSizes()};
-    top_one = postprocess_top_one(op, no);
+    top_one = postprocess_top_one(output, sizes);
     t_postprocessing.stop();
 
   }
