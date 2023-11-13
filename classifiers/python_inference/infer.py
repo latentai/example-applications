@@ -60,8 +60,10 @@ def main():
     m.infer(resized_image_normalized)
     
     # Post-process    
-    output = m.get_outputs()
-    print(output)
+    outputs = m.get_outputs()
+
+    output = outputs[0] 
+    output = T.from_dlpack(output)
     op = postprocess_top_one(output)
     print_top_one(op, args.labels)
 
@@ -71,14 +73,11 @@ def load_labels(path):
         return f.read().strip().split("\n")
     
 def postprocess_top_one(values):
-    # Apply softmax function to the data
-    # values = softmax(values)
+    values = T.nn.functional.softmax(values, dim=1)
+    max_index = T.argmax(values).item()
+    max_value = values[0][max_index]        
     
-    max_value = max(values)
-    top_one_index = values.index(max_value)
-    top_one = (top_one_index, max_value )
-    print(top_one)
-    
+    top_one = (max_index, max_value )
     return top_one
 
 def print_top_one(top_one, label_file_name):
@@ -97,22 +96,6 @@ def print_top_one(top_one, label_file_name):
     print(f" Name: {label}")
     print(f" Score: {top_one[1]}")
     print(" ------------------------------------------------------------ ")
-
-def softmax(v):
-    result = []
-    total = 0.0
-
-    # Compute the exponential of each element and the sum of all exponentials
-    for x in v:
-        exp_x = math.exp(x)
-        result.append(exp_x)
-        total += exp_x
-
-    # Normalize the exponentials to get the softmax probabilities
-    for i in range(len(result)):
-        result[i] /= total
-
-    return result
 
 if __name__ == "__main__":
     main()
