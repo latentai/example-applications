@@ -24,13 +24,13 @@ cv::Mat preprocess_imagenet_torch_nchw(cv::Mat &ImageInput) {
 }
 
 
-std::vector<std::pair<float,float>> postprocess_top_five(std::vector<DLTensor *> &tvm_outputs, std::vector<int> &output_size)
+std::vector<std::pair<float,float>> postprocess_top_five(std::vector<DLTensor *> &outputs, std::vector<int> &output_size)
 {
     std::vector<float> fdata(output_size[0]); // Generate Vector for Output
-    TVMArrayCopyToBytes(tvm_outputs[0], fdata.data(), output_size[0]); // Copy Data from DL Tensor (Model) to Vector
+    TVMArrayCopyToBytes(outputs[0], fdata.data(), output_size[0]); // Copy Data from DL Tensor (Model) to Vector
 
     // Get Index of Top5 Values
-    std::vector<float> idx(tvm_outputs[0]->shape[1]);
+    std::vector<float> idx(outputs[0]->shape[1]);
     std::iota(idx.begin(), idx.end(), 0);
 
     std::partial_sort(idx.begin(), idx.begin() + 5, idx.end(),
@@ -66,10 +66,10 @@ std::vector<float> softmax(std::vector<float> v) {
     return result;
 }
 
-std::pair<float,float> postprocess_top_one (std::vector<DLTensor *> &tvm_outputs, std::vector<int> &output_size)
+std::pair<float,float> postprocess_top_one (std::vector<DLTensor *> &outputs, std::vector<int> &output_size)
 {
-    std::vector<float> fdata(tvm_outputs[0]->shape[1]);
-    TVMArrayCopyToBytes(tvm_outputs[0], fdata.data(), output_size[0]);
+    std::vector<float> fdata(outputs[0]->shape[1]);
+    TVMArrayCopyToBytes(outputs[0], fdata.data(), output_size[0]);
     fdata = softmax(fdata);
     
     int max_element_index = std::max_element(fdata.begin(),fdata.end()) - fdata.begin();
