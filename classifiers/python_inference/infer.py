@@ -37,16 +37,19 @@ def main():
     args = parser.parse_args()
 
     # Model Factory
-    m = LatentRuntimeEngine(str(Path(args.model) / "modelLibrary.so"))
-    print(m.get_metadata())
+    model_runtime = LatentRuntimeEngine(str(Path(args.model) / "modelLibrary.so"))
+    print(model_runtime.get_metadata())
 
     # WarmUp Phase
-    m.warm_up(1)
+    model_runtime.warm_up(1)
     
-    # Load the image using PIL (Python Imaging Library)
+    # Run pre, inference and post processing x iterations
     input_image_path = args.input_image
     image = Image.open(input_image_path)
-    image_size = (224, 224)
+
+    layout_shapes = get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
+    
+    image_size = (layout_shapes.get('H'), layout_shapes.get('W'))
     resize_transform = transforms.Resize(image_size)
     resized_image = resize_transform(image)
     normalize_transform = transforms.Compose([
@@ -57,10 +60,10 @@ def main():
     resized_image_normalized = normalize_transform(resized_image)
 
     # Run inference
-    m.infer(resized_image_normalized)
+    model_runtime.infer(resized_image_normalized)
     
     # Post-process    
-    outputs = m.get_outputs()
+    outputs = model_runtime.get_outputs()
 
     output = outputs[0] 
     output = T.from_dlpack(output)
@@ -96,6 +99,17 @@ def print_top_one(top_one, label_file_name):
     print(f" Name: {label}")
     print(f" Score: {top_one[1]}")
     print(" ------------------------------------------------------------ ")
+    
+def get_layout_dims(layout_list, shape_list):
+    if len(layout_list) != 1 or len(shape_list) != 1:
+        raise ValueError("Both input lists should have exactly one element.")
+    layout_str = layout_list[0]
+    shape_tuple = shape_list[0]
+    if len(layout_str) != len(shape_tuple):
+        raise ValueError("Length of layout string does not match the number of elements in the shape tuple.")
+    dict = {letter: number for letter, number in zip(layout_str, shape_tuple)}
+    return dict
+
 
 if __name__ == "__main__":
     main()
