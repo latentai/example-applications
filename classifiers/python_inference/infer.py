@@ -6,22 +6,18 @@
 # *****************************************************************************/
 
 #!/usr/bin/env python
-import numpy as np
-import torch.nn.functional as F
 import torch as T
 import torchvision.transforms as transforms
 from PIL import Image
-import math
 
 def main():
-    import sys
     from argparse import ArgumentParser
     from pathlib import Path
 
     from pylre import LatentRuntimeEngine
 
     parser = ArgumentParser(description="Run inference")
-    parser.add_argument("--model", type=str, default=".", help="Path to LRE object directory.")
+    parser.add_argument("--path_to_model", type=str, default=".", help="Path to LRE object directory.")
     parser.add_argument(
         "--input_image",
         type=str,
@@ -37,7 +33,7 @@ def main():
     args = parser.parse_args()
 
     # Model Factory
-    model_runtime = LatentRuntimeEngine(str(Path(args.model) / "modelLibrary.so"))
+    model_runtime = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
     print(model_runtime.get_metadata())
 
     # WarmUp Phase
@@ -48,8 +44,8 @@ def main():
     image = Image.open(input_image_path)
 
     layout_shapes = get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
+    image_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
     
-    image_size = (layout_shapes.get('H'), layout_shapes.get('W'))
     resize_transform = transforms.Resize(image_size)
     resized_image = resize_transform(image)
     normalize_transform = transforms.Compose([
@@ -101,14 +97,22 @@ def print_top_one(top_one, label_file_name):
     print(" ------------------------------------------------------------ ")
     
 def get_layout_dims(layout_list, shape_list):
-    if len(layout_list) != 1 or len(shape_list) != 1:
-        raise ValueError("Both input lists should have exactly one element.")
-    layout_str = layout_list[0]
-    shape_tuple = shape_list[0]
-    if len(layout_str) != len(shape_tuple):
-        raise ValueError("Length of layout string does not match the number of elements in the shape tuple.")
-    dict = {letter: number for letter, number in zip(layout_str, shape_tuple)}
-    return dict
+    if len(layout_list) != len(shape_list):
+        raise ValueError("Both input lists should have the same number of elements.")
+    
+    result = []
+    
+    for i in range(len(layout_list)):
+        layout_str = layout_list[i]
+        shape_tuple = shape_list[i]
+        
+        if len(layout_str) != len(shape_tuple):
+            raise ValueError(f"Length of layout string does not match the number of elements in the shape tuple for input {i}.")
+        
+        layout_dict = {letter: number for letter, number in zip(layout_str, shape_tuple)}
+        result.append(layout_dict)
+    
+    return result
 
 
 if __name__ == "__main__":

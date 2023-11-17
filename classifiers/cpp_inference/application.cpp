@@ -31,19 +31,19 @@ int main(int argc, char *argv[]) {
 
   // Model Factory 
   LRE::LatentRuntimeEngine model_runtime(path_to_model);
-
   PrintModelMetadata(model_runtime);
   
   // WarmUp Phase 
   model_runtime.warmUp(1);
 
   std::pair<float, float> top_one;
-
+  auto input_details = getLayoutDims(model_runtime.getInputLayouts(),model_runtime.getInputShapes());
+  
   // Run pre, inference and post processing x iterations
   for (int i = 1; i < iterations; i++) {
 
     auto image_input{ReadImage(img_path)};
-    auto resized_image = ResizeImage(image_input, 224, 224); //TODO: Parse from the string getInputShapes()  
+    auto resized_image = ResizeImage(image_input, input_details['W'], input_details['H']); //TODO: Parse from the string getInputShapes()  
 
     t_preprocessing.start();
     cv::Mat processed_image = preprocess_imagenet_torch_nchw(resized_image);

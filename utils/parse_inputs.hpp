@@ -57,3 +57,57 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
 
     return true;
 }
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <regex>
+#include <stdexcept>
+#include <unordered_map>
+
+std::unordered_map<char, int> getLayoutDims(const std::string& layout, const std::string& shape) {
+    std::unordered_map<char, int> layoutDims;
+
+    std::regex layoutPattern(R"(\w+)"); // Regular expression to find letters in the layout string
+    std::smatch layoutMatches;
+    
+    // Regular expression to find tuples in the shape string
+    std::regex shapePattern(R"(\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\))");
+    std::smatch shapeMatches;
+
+    if (std::regex_search(layout, layoutMatches, layoutPattern) &&
+        std::regex_search(shape, shapeMatches, shapePattern)) {
+
+        std::string lettersStr = layoutMatches.str(0); // Extract the matched string
+        std::vector<char> letters;
+
+        // Extract characters from the string and store them in a vector
+        for (char letter : lettersStr) {
+            if (std::isalpha(letter)) { // Check if the character is a letter
+                letters.push_back(letter);
+            }
+        }
+
+        std::vector<int> numbers;
+
+        // Extract numbers from the shape string
+        for (size_t i = 1; i < shapeMatches.size(); ++i) {
+            numbers.push_back(std::stoi(shapeMatches.str(i)));
+        }
+
+        if (letters.size() != numbers.size()) {
+            throw std::invalid_argument("Layout and shape sizes do not match.");
+        }
+
+        // Create the layout dimensions mapping
+        for (size_t i = 0; i < letters.size(); ++i) {
+            layoutDims[letters[i]] = numbers[i];
+        }
+    } else {
+        throw std::invalid_argument("Failed to extract layout and shape values.");
+    }
+
+    return layoutDims;
+}
+

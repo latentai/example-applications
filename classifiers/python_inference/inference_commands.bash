@@ -18,12 +18,12 @@ fi
 
 echo "FP32..."
 mkdir -p $FLOAT32_PACKAGE/trt-cache
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_PACKAGE/trt-cache python3 infer.py --model $FLOAT32_MODEL --input_image ../../sample_images/coffee.jpg --labels ../../labels/class_names_10.txt
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_PACKAGE/trt-cache python3 infer.py --path_to_model $FLOAT32_MODEL --input_image ../../sample_images/apple.jpg --labels ../../labels/class_names_10.txt
 
 echo "FP16..."
 mkdir -p $FLOAT32_PACKAGE/trt-cache
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_PACKAGE/trt-cache TVM_TENSORRT_USE_FP16=1 python3 infer.py --lre_object $FLOAT32_MODEL --input_image ../../sample_images/apple.jpg --labels ../../labels/class_names_10.txt
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_PACKAGE/trt-cache TVM_TENSORRT_USE_FP16=1 python3 infer.py --path_to_model $FLOAT32_MODEL --input_image ../../sample_images/apple.jpg --labels ../../labels/class_names_10.txt
 
 echo "INT8..."
 mkdir -p $INT8_PACKAGE/trt-cache
-TVM_TENSORRT_CACHE_DIR=$INT8_PACKAGE/trt-cache TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=~/.latentai/LRE/.model/.activations/ python3 infer.py --lre_object $INT8_MODEL --input_image ../../sample_images/apple.jpg --labels ../../labels/class_names_10.txt
+TVM_TENSORRT_CACHE_DIR=$INT8_PACKAGE/trt-cache TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=~/.latentai/LRE/.model/.activations/ python3 infer.py --path_to_model $INT8_MODEL --input_image ../../sample_images/apple.jpg --labels ../../labels/class_names_10.txt
