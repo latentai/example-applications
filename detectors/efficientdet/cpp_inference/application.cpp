@@ -5,7 +5,7 @@
 // and is released under the Apache 2.0 License.
 // *****************************************************************************/
 
-#include <tvm/runtime/latentai/lre_model.hpp>
+#include <tvm/runtime/latentai/lre.hpp>
 #include <tvm/runtime/latentai/lre_cryption_service.hpp>
 
 #include "efficientdet_processors.hpp"
@@ -31,14 +31,13 @@ int main(int argc, char *argv[]) {
 
   
   // Model Factory
-  DLDevice device_t{kDLCUDA, 0}; //Change to kDLCPU if inference target is a CPU 
-  LreModel model(model_binary, device_t);
+  LRE::LatentRuntimeEngine model(model_binary);
   PrintModelMetadata(model);
 
   std::cout << "Image: " << imgPath << std::endl;
 
   // WarmUp Phase 
-  model.WarmUp(1);
+  model.warmUp(1);
 
   // Run pre, inference and post processing x iterations
   for (int j = 0; j < iterations; j++) {
@@ -54,14 +53,14 @@ int main(int argc, char *argv[]) {
 
     // Infer
     t_inference.start();
-    model.InferOnce(processed_image.data);
+    model.infer(processed_image.data);
     t_inference.stop();
 
     /*      Post Processing      */
 
     // Convert DLTensor to at::Tensor
     t_op_transform.start();
-    auto outputs = convert_to_atTensor(model.tvm_outputs[0]);
+    auto outputs = convert_to_atTensor(model.getOutputs()[0]);
     t_op_transform.stop();
 
     auto tensors_ = ssd_tensors(outputs[0],model.input_width,model.input_height);
