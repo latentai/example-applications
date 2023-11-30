@@ -71,10 +71,9 @@ def main():
     output = outputs[0]
     outputdl = T.from_dlpack(output)
     
-    # import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     device = model_runtime.device_type    
     output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="ssd", device=device)
-    print(output)
 
 
     # output = model._postprocess(inference, args.input_image)

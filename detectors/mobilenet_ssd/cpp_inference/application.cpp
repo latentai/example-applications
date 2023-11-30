@@ -5,7 +5,7 @@
 // and is released under the Apache 2.0 License.
 // *****************************************************************************/
 
-#include <tvm/runtime/latentai/lre_model.hpp>
+#include <tvm/runtime/latentai/lre.hpp>
 #include <tvm/runtime/latentai/lre_cryption_service.hpp>
 
 #include "mobilenetSSD_processors.hpp"
@@ -30,13 +30,12 @@ int main(int argc, char *argv[]) {
   std::string imgPath = params.img_path;
 
   // Model Factory
-  DLDevice device_t{kDLCUDA, 0}; //Change to kDLCPU if inference target is a CPU 
-  LreModel model(model_binary, device_t);
+  LRE::LatentRuntimeEngine model(model_binary);
   PrintModelMetadata(model);
 
   std::cout << "Image: " << imgPath << std::endl;
 
-  model.WarmUp(1);
+  model.warmUp(1);
 
   int label_nums;
 
@@ -54,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     // Infer
     t_inference.start();
-    model.InferOnce(processed_image.data);
+    model.infer(processed_image.data);
     t_inference.stop();
 
     // Post Processing
@@ -62,47 +61,50 @@ int main(int argc, char *argv[]) {
 
     // Convert DLTensor to at::Tensor
     t_op_transform.start();
-    dloutputs = convert_to_atTensor(model.tvm_outputs);
+    auto op{model.getOutputs()};
+    dloutputs = convert_to_atTensor(op);
+    std::cout << dloutputs << std::endl;
     // Get Raw Scores and Boxes
     auto scores = dloutputs[0][0];
-    auto boxes = dloutputs[1][0];
-    t_op_transform.stop();
+    std::cout << scores << std::endl;
+    auto boxes = dloutputs[0][1]; // SEGFAULTS
+    // t_op_transform.stop();
 
-    label_nums = scores.size(1);
+  //   label_nums = scores.size(1);
 
-    for(int i = 1; i < scores.size(1); i++)
-    {
-      // Drop classes and boxes below score threshold
-      t_thresholding.start();
-      auto probs = scores.index({"...", i});
-      auto mask = at::where(probs > 0.1);
+  //   for(int i = 1; i < scores.size(1); i++)
+  //   {
+  //     // Drop classes and boxes below score threshold
+  //     t_thresholding.start();
+  //     auto probs = scores.index({"...", i});
+  //     auto mask = at::where(probs > 0.1);
 
-      probs = probs.index({mask[0]}); 
-      if(probs.size(0) == 0){
-        t_thresholding.stop();
-        continue;
-      }
-      auto select_boxes = boxes.index({mask[0],"..."});
-      t_thresholding.stop();
+  //     probs = probs.index({mask[0]}); 
+  //     if(probs.size(0) == 0){
+  //       t_thresholding.stop();
+  //       continue;
+  //     }
+  //     auto select_boxes = boxes.index({mask[0],"..."});
+  //     t_thresholding.stop();
 
-      // NMS
-      t_nms.start();
-      at::Tensor picked_boxes_and_scores = hard_nms(select_boxes,probs);
-      t_nms.stop();
+  //     // NMS
+  //     t_nms.start();
+  //     at::Tensor picked_boxes_and_scores = hard_nms(select_boxes,probs);
+  //     t_nms.stop();
 
-      // Box resize and label
-      t_box_resize.start();
-      resize_boxes_and_label(picked_boxes_and_scores,model.input_width,model.input_height,i);
-      result_output.emplace_back(picked_boxes_and_scores);
-      t_box_resize.stop();
-    }
+  //     // Box resize and label
+  //     t_box_resize.start();
+  //     resize_boxes_and_label(picked_boxes_and_scores,model.input_width,model.input_height,i);
+  //     result_output.emplace_back(picked_boxes_and_scores);
+  //     t_box_resize.stop();
+  //   }
 
-    // Result Filter
-    t_filter.start();
-    results = at::cat(result_output,0);
-    auto filter = at::where(results.index({"...",4}) > 0.3);
-    results = results.index({filter[0]});
-    t_filter.stop();
+  //   // Result Filter
+  //   t_filter.start();
+  //   results = at::cat(result_output,0);
+  //   auto filter = at::where(results.index({"...",4}) > 0.3);
+  //   results = results.index({filter[0]});
+  //   t_filter.stop();
   }
 
   print_results(results);

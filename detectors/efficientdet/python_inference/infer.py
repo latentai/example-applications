@@ -39,17 +39,6 @@ def main():
     sys.path.append(model_path)
 
     from processors import general_detection_postprocessor
-
-    # from preprocessors.factory import get_preprocessor
-    # from postprocessors.factory import get_postprocessor
-    # from representations.boundingboxes.utils import BBFormat
-    # import albumentations as A
-
-    # pad_transform = A.Compose([
-    #     A.augmentations.geometric.resize.LongestMaxSize(max_size=512),
-    #     A.augmentations.geometric.transforms.PadIfNeeded(
-    #         min_height=512, min_width=512, value=[124, 116, 104], border_mode=0)
-    # ])
     
     # Load your image
     pil_image = Image.open(args.input_image)
@@ -77,11 +66,13 @@ def main():
     outputs = model.infer(padded_image_tensor)
     
     # Apply post-processing to model outputs # to be DONE
-    # predictions = model._postprocess(outputs, args.input_image)
+    threshold = 0.3
+    max_d = 20
+    prediction_confidence_threshold = 0.3
+    predictions = general_detection_postprocessor.post_process_efficientdet_format_for_leip(outputs, threshold, max_d, prediction_confidence_threshold)
 
     # rgb_img = Image.fromarray(pad_transform_img).convert("RGB")
     # out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
-    # threshold = 0.3
 
     # for bb in predictions:
     #     for i in range(0, len(bb)):

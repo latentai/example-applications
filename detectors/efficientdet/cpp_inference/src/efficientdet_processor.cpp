@@ -47,7 +47,6 @@ cv::Mat preprocess_yolo(cv::Mat &ImageInput) {
 }
 
 
-/*
 torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size)
 {
   boxes = boxes.clamp(0);
@@ -77,6 +76,7 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
   cv::imwrite(image_path,image_out);
 }
 
+/*
 std::vector<torch::Tensor> postprocess_efficientdet(std::vector<DLTensor *> &tvm_outputs,cv::Size dstSize)
 {
   constexpr float PREDICTION_CONFIDENCE_THRESHOLD = 0.3;
@@ -205,7 +205,6 @@ std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int 
 }
 
 
-/*
 
 std::string date_stamp()
 {
@@ -218,6 +217,7 @@ std::string date_stamp()
   
   return date_string;
 }
+/*
 
 
 torch::Tensor vision_nms(at::Tensor box_out_decoded,at::Tensor scores, at::Tensor classes, float iou_threshold, float confidence_threshold, int max_det_per_image)
@@ -238,6 +238,7 @@ torch::Tensor vision_nms(at::Tensor box_out_decoded,at::Tensor scores, at::Tenso
 
 }
 
+*/
 void print_detections(at::Tensor detections)
 {
   std::cout << "-----------------------------------------------------------" << "\n";
@@ -248,5 +249,3 @@ void print_detections(at::Tensor detections)
   std::cout << detections << "\n";
   std::cout << "-----------------------------------------------------------" << "\n";
 }
-
-*/

@@ -80,12 +80,13 @@ int main(int argc, char *argv[]) {
     auto filtered_detections = at::where(detections.index({"...",4}) > 0.3);
     detections = detections.index({filtered_detections[0]});
 
-    std::cout << detections << std::endl;
- 
-  }
+    std::cout << "Detections:" << detections << std::endl;
+    std::cout << "Width:" << model.input_width << std::endl;
+    std::cout << "Height:" << model.input_height << std::endl;
 
-  // print_detections(results[0]);
-  // draw_boxes(results[0], imgPath,model.input_width, model.input_height);
+    print_detections(detections);
+    draw_boxes(detections, imgPath,model.input_width, model.input_height);
+  }
 
   // std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
   // std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
