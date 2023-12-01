@@ -75,26 +75,24 @@ def main():
     device = model_runtime.device_type    
     output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="ssd", device=device)
 
-
-    # output = model._postprocess(inference, args.input_image)
-
-    # rgb_img = image.convert("RGB")
-    # out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
-    # threshold = 0.3
-    # for bb in output:
-    #     for i in range(0,len(bb)):
-    #         if bb[i].get_confidence() > threshold:
-    #             out_im = plot_one_box(
-    #                 bb[i].get_coordinates(BBFormat.absolute_xyx2y2, image_size=rgb_img.size),
-    #                 out_im,
-    #                 color=(255, 0, 0),
-    #                 label=labels[bb[i].get_class_id()],
-    #             )
+    from representations.boundingboxes.utils import BBFormat
+    rgb_img = image.convert("RGB")
+    out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
+    threshold = 0.3
+    for bb in output:
+        for i in range(0,len(bb)):
+            if bb[i].get_confidence() > threshold:
+                out_im = plot_one_box(
+                    bb[i].get_coordinates(BBFormat.absolute_xyx2y2, image_size=rgb_img.size),
+                    out_im,
+                    color=(255, 0, 0),
+                    label=labels[bb[i].get_class_id()],
+                )
     
-    # p = os.path.splitext(args.input_image)
-    # output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
-    # cv2.imwrite(output_filename, out_im)
-    # print("Annotated image written to", output_filename)
+    p = os.path.splitext(args.input_image)
+    output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
+    cv2.imwrite(output_filename, out_im)
+    print("Annotated image written to", output_filename)
 
 
 def load_labels(path):
