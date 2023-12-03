@@ -48,7 +48,10 @@ def main():
     
     labels = load_labels(args.labels)
 
-    image = Image.open(args.input_image)    
+    image = Image.open(args.input_image)
+    orig_size = image.size
+    print("orig_size")
+    print(orig_size)
 
     layout_shapes = get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
     image_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
@@ -71,27 +74,52 @@ def main():
     output = outputs[0]
     outputdl = T.from_dlpack(output)
     
-    #import pdb; pdb.set_trace()
-    device = model_runtime.device_type    
-    output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="ssd", device=device)
+    device = model_runtime.device_type
+    deploy_env =  'torch' # 'torch' 'leip' 'af'   
+    output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="ssd", device=device, deploy_env=deploy_env)
 
-    from representations.boundingboxes.utils import BBFormat
-    rgb_img = image.convert("RGB")
-    out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
-    threshold = 0.3
-    for bb in output:
-        for i in range(0,len(bb)):
-            if bb[i].get_confidence() > threshold:
-                out_im = plot_one_box(
-                    bb[i].get_coordinates(BBFormat.absolute_xyx2y2, image_size=rgb_img.size),
-                    out_im,
-                    color=(255, 0, 0),
-                    label=labels[bb[i].get_class_id()],
-                )
+    if deploy_env == 'leip':
+        from representations.boundingboxes.utils import BBFormat
+        rgb_img = image.convert("RGB")
+        out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
+        threshold = 0.3
+        for bb in output:
+            for i in range(0,len(bb)):
+                if bb[i].get_confidence() > threshold:
+                    out_im = plot_one_box(
+                        bb[i].get_coordinates(BBFormat.absolute_xyx2y2, image_size=rgb_img.size),
+                        out_im,
+                        color=(255, 0, 0),
+                        label=labels[bb[i].get_class_id()],
+                    )
+
+    elif deploy_env == 'torch':
+        from torchvision.utils import draw_bounding_boxes
+        pil_transform = transforms.PILToTensor()
+        out_im = pil_transform(image)
+        threshold = 0.3
+        for bb in output:
+            for i in range(0,len(bb)):
+                if bb[i][4] > threshold:
+                    box = bb[i][0:4]
+                    box[0] = box[0]*orig_size[0]/image_size[0]
+                    box[1] = box[1]*orig_size[1]/image_size[1]
+                    box[2] = box[2]*orig_size[0]/image_size[0]
+                    box[3] = box[3]*orig_size[1]/image_size[1]
+                    box = box.unsqueeze(0)
+                    label = [labels[int(bb[i][5])]]
+                    out_im = draw_bounding_boxes(out_im, box, label, 
+                        width=5, colors="blue", fill=False) 
+                        # font="serif", font_size=30)
+        pil_to_transform = transforms.ToPILImage()
+        out_im = pil_to_transform(out_im)
     
     p = os.path.splitext(args.input_image)
     output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
-    cv2.imwrite(output_filename, out_im)
+    if deploy_env == 'leip':
+        cv2.imwrite(output_filename, out_im)
+    elif deploy_env == 'torch':
+        out_im.save(output_filename)
     print("Annotated image written to", output_filename)
 
 
