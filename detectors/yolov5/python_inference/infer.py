@@ -7,22 +7,24 @@
 
 #!/usr/bin/env python
 
+
 import os
+import sys
 
-import cv2
-import numpy as np
+import torch as T
+import torchvision.transforms as transforms
 
+from PIL import Image
+
+from argparse import ArgumentParser
+from pathlib import Path
+
+from pylre import LatentRuntimeEngine
 
 def main():
-    import datetime
-    import sys
-    from argparse import ArgumentParser
-    from pathlib import Path
-
-    from PIL import Image
 
     parser = ArgumentParser(description="Run inference")
-    parser.add_argument("--lre_object", type=str, default=".",
+    parser.add_argument("--path_to_model", type=str, default=".",
                         help="Path to LRE object directory.")
     parser.add_argument(
         "--input_image",
@@ -37,82 +39,55 @@ def main():
         help="Path to labels text file.",
     )
     args = parser.parse_args()
-
-    sys.path.append(str(Path(args.lre_object) / "latentai.lre"))
     
-    import latentai_runtime
-    from representations.boundingboxes.utils import BBFormat
-    import albumentations as A
+    # sys.path.append(str(Path(args.path_to_model))) # If postprocessor is in the model
+    # from processors import general_detection_postprocessor
+    
+    project_dir = os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir))
+    sys.path.insert(0, project_dir)
+    
+    from utils import general_detection_postprocessor, utils
+        
+    # Model Factory
+    model_runtime = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
+    print(model_runtime.get_metadata())    
 
-    pad_transform = A.Compose([
-        A.augmentations.geometric.resize.LongestMaxSize(max_size=640),
-        A.augmentations.geometric.transforms.PadIfNeeded(
-            min_height=640, min_width=640, value=0, border_mode=0)
-    ])
-
-    # Load Model
-    m = latentai_runtime.Model()
-
+    labels = utils.load_labels(args.labels)
+    
     # Load Image and Labels
     image = Image.open(args.input_image)
-    labels = load_labels(args.labels)
-
-    # Run Inference
-    output = m.predict([image])[0]
-
-    # Prediction Visualization
-    pad_transform_img = pad_transform(image=np.array(image))["image"]
-    rgb_img = Image.fromarray(pad_transform_img).convert("RGB")
-    out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
+    orig_size = image.size
+    print("orig_size")
+    print(orig_size)
     
-    threshold = 0.3
-    for bb in output:
-        if bb.get_confidence() > threshold:
-            print(f"Prediction above {threshold}: {bb}")
-            out_im = plot_one_box(
-                bb.get_coordinates(bb_format=BBFormat.absolute_xyx2y2),
-                out_im,
-                color=(255, 0, 0),
-                label=labels[bb.get_class_id()],
-            )
-    p = os.path.splitext(args.input_image)
-    output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
-    cv2.imwrite(output_filename, out_im)
+    # Pre-process
+    layout_shapes = utils.get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
+    image_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
+    print("image_size")
+    print(image_size)
+    
+    resize_transform = transforms.Resize(image_size)
+    resized_image = resize_transform(image)
+    normalize_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    # Apply the normalization transformation
+    resized_image_normalized = normalize_transform(resized_image)
+    # Run Inference
+    model_runtime.infer(resized_image_normalized)
+    
+    # Get outputs as a list of PyDLPack
+    outputs = model_runtime.get_outputs()
+    output = outputs[0]
+    outputdl = T.from_dlpack(output)
+    
+    # Post-process
+    device = model_runtime.device_type
+    deploy_env =  'torch' # 'torch' 'leip' 'af'   
+    output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="yolo", device=device, deploy_env=deploy_env)
+    output_filename = utils.plot_boxes(deploy_env, image, orig_size, image_size, labels, output, args)
     print("Annotated image written to", output_filename)
-
-
-def load_labels(path):
-    with open(path, "r") as f:
-        return f.read().strip().split("\n")
-
-
-def plot_one_box(box, img, color, label=None, line_thickness=None):
-    # Plots one bounding box on image img
-    tl = line_thickness or round(
-        0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
-
-    # list of COLORS
-    c1, c2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-    cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
-
-    if label:
-        tf = max(tl - 1, 1)  # font thickness
-        t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-        c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
-        cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
-        cv2.putText(
-            img,
-            label,
-            (c1[0], c1[1] - 2),
-            0,
-            tl / 3,
-            [225, 255, 255],
-            thickness=tf,
-            lineType=cv2.LINE_AA,
-        )
-
-    return img
-
 
 if __name__ == "__main__":
     main()

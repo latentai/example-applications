@@ -6,16 +6,17 @@
 # *****************************************************************************/
 
 import os
-import cv2
 import sys
-import datetime
-import numpy as np
-from pathlib import Path
-from argparse import ArgumentParser
-from pylre import LatentRuntimeEngine
-import torch
+
+import torch as T
 import torchvision.transforms as transforms
+
 from PIL import Image
+
+from argparse import ArgumentParser
+from pathlib import Path
+
+from pylre import LatentRuntimeEngine
 
 
 def main():
@@ -35,113 +36,53 @@ def main():
     )
 
     args = parser.parse_args()
-    model_path = str(Path(args.path_to_model))
-    sys.path.append(model_path)
-
-    from processors import general_detection_postprocessor
     
-    # Load your image
-    pil_image = Image.open(args.input_image)
-
-    # Define target size and pad value
-    target_height = 512
-    target_width = 512
-    pad_value = 124  # RGB values for padding
-
-    # Apply custom padding
-    padded_image_pil = custom_pad(pil_image, target_height, target_width, pad_value)
-    transform = transforms.ToTensor()
-    padded_image_tensor = transform(padded_image_pil)
-
-    # image = Image.open(args.input_image)
-    model = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
-    print(model.get_metadata())
-    # image = cv2.imread(args.input_image)  # Replace with the path to your image
-    # transformed_image = pad_transform(image, max_size=500)
+    # sys.path.append(str(Path(args.path_to_model))) # If postprocessor is in the model
+    # from processors import general_detection_postprocessor
     
+    project_dir = os.path.abspath(os.path.join(os.getcwd(), os.path.pardir, os.path.pardir))
+    sys.path.insert(0, project_dir)
+
+    from utils import general_detection_postprocessor, utils
     
-    labels = load_labels(args.labels)
-
-    # Model inference
-    outputs = model.infer(padded_image_tensor)
+    model_runtime = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
+    print(model_runtime.get_metadata())
     
-    # Apply post-processing to model outputs # to be DONE
-    threshold = 0.3
-    max_d = 20
-    prediction_confidence_threshold = 0.3
-    predictions = general_detection_postprocessor.post_process_efficientdet_format_for_leip(outputs, threshold, max_d, prediction_confidence_threshold)
+    labels = utils.load_labels(args.labels)
 
-    # rgb_img = Image.fromarray(pad_transform_img).convert("RGB")
-    # out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
+    image = Image.open(args.input_image)
+    orig_size = image.size
+    print("orig_size")
+    print(orig_size)
 
-    # for bb in predictions:
-    #     for i in range(0, len(bb)):
-    #         if bb[i].get_confidence() > threshold:
-    #             out_im = plot_one_box(
-    #                 bb[i].get_coordinates(
-    #                     BBFormat.absolute_xyx2y2, image_size=rgb_img.size),
-    #                 out_im,
-    #                 color=(255, 0, 0),
-    #                 label=labels[int(bb[i].get_class_id())],
-    #             )
-    #         i = i+1
-
-    # p = os.path.splitext(args.input_image)
-    # output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
-    # cv2.imwrite(output_filename, out_im)
-    # print("Annotated image written to", output_filename)
-
-def custom_pad(image, target_height, target_width, pad_value):
-    # Calculate the padding values
-    pad_height = max(0, target_height - image.size[1])
-    pad_width = max(0, target_width - image.size[0])
-
-    # Calculate the resizing dimensions
-    resize_height = target_height - pad_height
-    resize_width = target_width - pad_width
-
-    # Resize the image to fit within the target dimensions
-    resized_image = image.resize((resize_width, resize_height))
-
-    # Create a new blank image with the desired size and fill with pad_value
-    padded_image = Image.new("RGB", (target_width, target_height), (pad_value, pad_value, pad_value))
-
-    # Paste the resized image into the center of the padded image
-    padded_image.paste(resized_image, ((pad_width // 2), (pad_height // 2)))
-
-    return padded_image
-
-def load_labels(path):
-    with open(path, "r") as f:
-        return f.read().strip().split("\n")
-
-
-def plot_one_box(box, img, color, label=None, line_thickness=None):
-    # Plots one bounding box on image img
-    tl = line_thickness or round(
-        0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
-
-    # list of COLORS
-    c1, c2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-    cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
-
-    if label:
-        tf = max(tl - 1, 1)  # font thickness
-        t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-        c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
-        cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
-        cv2.putText(
-            img,
-            label,
-            (c1[0], c1[1] - 2),
-            0,
-            tl / 3,
-            [225, 255, 255],
-            thickness=tf,
-            lineType=cv2.LINE_AA,
-        )
-    return img
-
-
+    layout_shapes = utils.get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
+    image_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
+    print("image_size")
+    print(image_size)
+    
+    resize_transform = transforms.Resize(image_size)
+    resized_image = resize_transform(image)
+    normalize_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    # Apply the normalization transformation
+    resized_image_normalized = normalize_transform(resized_image)
+    
+    # Run inference
+    model_runtime.infer(resized_image_normalized)
+    
+    # Get outputs as a list of PyDLPack
+    outputs = model_runtime.get_outputs()
+    output = outputs[0]
+    outputdl = T.from_dlpack(output)
+    
+    device = model_runtime.device_type
+    deploy_env =  'torch' # 'torch' 'leip' 'af'   
+    output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="ssd", device=device, deploy_env=deploy_env)
+    
+    output_filename = utils.plot_boxes(deploy_env, image, orig_size, image_size, labels, output, args)
+    
+    print("Annotated image written to", output_filename)
 if __name__ == "__main__":
     main()
