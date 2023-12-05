@@ -79,7 +79,7 @@ def main():
     
     device = model_runtime.device_type
     deploy_env =  'torch' # 'torch' 'leip' 'af'   
-    output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="ssd", device=device, deploy_env=deploy_env)
+    output = general_detection_postprocessor.postprocess(outputdl, max_det_per_image=10, prediction_confidence_threshold=0.5, iou_threshold=0.2, height=image_size[0], width=image_size[1], model_output_format="yolo", device=device, deploy_env=deploy_env)
     
     output_filename = utils.plot_boxes(deploy_env, image, orig_size, image_size, labels, output, args)
     
