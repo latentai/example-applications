@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
     auto outputs = convert_to_atTensor(model.getOutputs()[0]);
     t_op_transform.stop();
 
-    auto tensors_ = ssd_tensors(outputs[0],model.input_width,model.input_height);
+    auto tensors_ = effdet_tensors(outputs[0]);
 
     // NMS from Torchvision 
     auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"],0.45);
