@@ -7,8 +7,13 @@
 
 #!/bin/bash
 
-FLOAT32_MODEL=/home/dev/models/recipe_hub/nanodet/aarch64_cuda_xavier_jp4/Float32-compile
-INT8_MODEL=/home/dev/models/recipe_hub/efficientdetn/aarch64_cuda_xavier_jp4/Int8-optimize
+NANODET=0
+MOBNETSSD=0
+EFFICIENTDET=0
+YOLO=1
+
+FLOAT32_MODEL=~/models/detector/x86_64_cuda/Float32-compile
+INT8_MODEL=~/models/detector/x86_64_cuda/Int8-optimize
 
 if [ -v MODEL_PATH ];
 then
@@ -31,6 +36,17 @@ else
 fi
 echo $TORCH_PATH
 
+# Generate the config.h
+echo "#ifndef CONFIG_H" > include/config.h
+echo "#define CONFIG_H" >> include/config.h
+echo "#define CONFIDENCE_THRESHOLD 0.30"  >> include/config.h # 0.3 normally, just for nanodet 0.45
+echo "#define IOU_THRESHOLD 0.45"  >> include/config.h
+
+echo "#define NANODET $NANODET" >> include/config.h
+echo "#define MOBNETSSD $MOBNETSSD" >> include/config.h
+echo "#define EFFICIENTDET $EFFICIENTDET" >> include/config.h
+echo "#define YOLO $YOLO" >> include/config.h
+echo "#endif // CONFIG_H" >> include/config.h
 
 # Compile
 mkdir build
@@ -44,10 +60,10 @@ cd ..
 mkdir -p $FLOAT32_MODEL/trt-cache/
 TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
 
-# # FP16
-# # mkdir -p $FLOAT32_MODEL/trt-cache/
-# # TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../../sample_images/bus.jpg
+# FP16
+mkdir -p $FLOAT32_MODEL/trt-cache/
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
 
-# # INT8
-# mkdir -p $INT8_MODEL/trt-cache/
-# TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+# INT8
+mkdir -p $INT8_MODEL/trt-cache/
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
