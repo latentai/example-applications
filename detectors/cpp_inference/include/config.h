@@ -1,0 +1,15 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// MODELS
+#define NANODET 1
+#define EFFICIENDET 0
+#define MOBNETSSD 0
+#define YOLO 0
+
+
+// PARAMETERS
+#define CONFIDENCE_THRESHOLD 0.40
+#define IOU_THRESHOLD 0.45
+
+#endif // CONFIG_H
