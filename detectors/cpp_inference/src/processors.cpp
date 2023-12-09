@@ -60,7 +60,7 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
   cv::Mat origImage = cv::imread(image_path);
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(WIDTH,HEIGHT);
-  cv::Mat image_out = resizeAndCenterImage(origImage, dstSize, background);
+  cv::Mat image_out = resizeAndCenterImage(origImage, dstSize, background); //TODO: Remove for models that already resize
 
   for (int i = 0; i < pred_boxes_x1y1x2y2.sizes()[0]; i++)
   {
@@ -108,11 +108,7 @@ std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output)
   std::map<std::string, at::Tensor> effdet_tensors_;
 
   effdet_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
-
-  std::cout << effdet_tensors_["boxes"].sizes() << std::endl; 
   effdet_tensors_["classes"] = output.index({at::indexing::Slice(),4});
-    std::cout << effdet_tensors_["classes"].sizes() << std::endl; 
-
   effdet_tensors_["scores"] = output.index({at::indexing::Slice(),5});
 
   return effdet_tensors_;
@@ -141,9 +137,6 @@ std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int 
 
   scale_tensor[0] = width; scale_tensor[2] = width;
   scale_tensor[1] = height; scale_tensor[3] = height;
-
-  std::cout << scale_tensor << std::endl;
-
 
   ssd_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)}) * scale_tensor;
 
