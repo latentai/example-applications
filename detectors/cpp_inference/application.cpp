@@ -17,7 +17,7 @@
 #include <display_model_metadata.hpp>
 #include <iomanip>
 
-Timer t_preprocessing,t_inference,t_op_transform,t_anchors_gen,t_decoding,t_nms;
+Timer t_preprocessing,t_inference,t_op_transform,t_nms, t_postprocessing;
 
 int main(int argc, char *argv[]) {
   InputParams params;
