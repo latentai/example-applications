@@ -6,7 +6,7 @@
 // *****************************************************************************/
 
 #include "processors.hpp"
-
+#include "config.h"
 
 cv::Mat resizeAndCenterImage(const cv::Mat& input, const cv::Size& outputSize, const cv::Scalar& backgroundColor)
 {
@@ -57,10 +57,16 @@ torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size)
 
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float WIDTH, float HEIGHT)
 {
+  cv::Mat image_out{};
   cv::Mat origImage = cv::imread(image_path);
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(WIDTH,HEIGHT);
-  cv::Mat image_out = resizeAndCenterImage(origImage, dstSize, background); //TODO: Remove for models that already resize
+  #if YOLO
+   image_out = resizeAndCenterImage(origImage, dstSize, background);
+  #else
+    cv::Size image_size = cv::Size(WIDTH, HEIGHT);
+    cv::resize(origImage, image_out, image_size,0,0,cv::INTER_NEAREST); 
+  #endif
 
   for (int i = 0; i < pred_boxes_x1y1x2y2.sizes()[0]; i++)
   {
