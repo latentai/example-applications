@@ -42,10 +42,12 @@ def post_process_efficientdet_format_for_leip(
 
 
 
-def transform_into_leip_representation(batch_detections, coco80_to_coco91_map, height, width):
+def transform_into_leip_representation(batch_detections, output_format, height, width):
     from representations.boundingboxes.boundingbox import BoundingBox
     from representations.boundingboxes.utils import BBFormat
     postprocessed_batch = []
+    convert_coco80_to_coco91 = (output_format == 'nanodet')
+    coco80_to_coco91_map = [x for x in range(1, 91) if x not in [12, 26, 29, 30, 45, 66, 68, 69, 71, 83]] if convert_coco80_to_coco91 else None
     for sample_detections in batch_detections:
         bbs = []
         for bbox in sample_detections:
@@ -134,8 +136,6 @@ def postprocess(input, **kwargs):
     max_det_per_image = int(kwargs["max_det_per_image"])
     prediction_confidence_threshold = float(kwargs["prediction_confidence_threshold"])
     iou_threshold = float(kwargs["iou_threshold"])
-    convert_coco80_to_coco91 = kwargs.get("convert_coco80_to_coco91", False) # for efficientdet or any other models not pretrained on coco-detection this should be False (efficientdet was pretrained on coco-detection-90)
-    coco80_to_coco91_map = [x for x in range(1, 91) if x not in [12, 26, 29, 30, 45, 66, 68, 69, 71, 83]] if convert_coco80_to_coco91 else None
     height = int(kwargs["height"])
     width = int(kwargs["width"])
     output_format = kwargs["model_output_format"]
@@ -158,7 +158,7 @@ def postprocess(input, **kwargs):
     batch_detections = post_process_efficientdet_format_for_leip(input, iou_threshold, max_det_per_image, prediction_confidence_threshold)
     
     if deploy_env == 'leip':
-        postprocessed_batch = transform_into_leip_representation(batch_detections, coco80_to_coco91_map, height, width)
+        postprocessed_batch = transform_into_leip_representation(batch_detections, output_format, height, width)
     elif deploy_env == 'torch':
         postprocessed_batch = batch_detections
     else:
