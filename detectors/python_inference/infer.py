@@ -81,6 +81,10 @@ def main():
         
     # Model Factory
     model_runtime = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
+    use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
+
+    if(use_fp16):
+        model_runtime.set_model_precision("float16")
     print(model_runtime.get_metadata())
 
     layout_shapes = utils.get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
