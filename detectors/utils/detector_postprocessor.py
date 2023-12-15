@@ -138,7 +138,7 @@ def postprocess(input, **kwargs):
     iou_threshold = float(kwargs["iou_threshold"])
     height = int(kwargs["height"])
     width = int(kwargs["width"])
-    output_format = kwargs["model_output_format"]
+    output_format = kwargs["output_format"]
     deploy_env = kwargs["deploy_env"]
     # Deal with different input format when model is ingested via SDK
     if isinstance(input, list) and isinstance(input[0], ndarray):

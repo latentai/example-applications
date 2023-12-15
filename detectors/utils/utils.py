@@ -128,7 +128,7 @@ def plot_boxes(deploy_env, image, labels, output, args):
                     label=label,
                 )
     
-    p = os.path.splitext(args.input_image)
+    p = os.path.splitext(args.input_image_path)
     output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
     if deploy_env == 'leip':
         cv2.imwrite(output_filename, out_im)

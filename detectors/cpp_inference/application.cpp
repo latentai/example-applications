@@ -27,54 +27,54 @@ int main(int argc, char *argv[]) {
 
   std::string model_binary = params.model_binary_path;
   int iterations = params.iterations;
-  std::string imgPath = params.img_path;
+  std::string input_image_string = params.input_image_path;
   at::Tensor detections{};
   bool use_fp16 = std::getenv("TVM_TENSORRT_USE_FP16") ? std::stoi(std::getenv("TVM_TENSORRT_USE_FP16")) != 0 : false;
   
   // Model Factory
-  LRE::LatentRuntimeEngine model(model_binary);
+  LRE::LatentRuntimeEngine lre(model_binary);
   if (use_fp16){
-    model.setModelPrecision("float16");
-    std::cout << "Running model as FP16" << std::endl;
+    lre.setModelPrecision("float16");
+    std::cout << "Running LRE as FP16" << std::endl;
   }
-  PrintModelMetadata(model);
+  PrintModelMetadata(lre);
 
   // WarmUp Phase 
-  model.warmUp(1);
+  lre.warmUp(1);
 
   // Run pre, inference and post processing x iterations
   for (int j = 0; j < iterations; j++) {
     
-    auto imageInput{ReadImage(imgPath)};
+    auto imageInput{ReadImage(input_image_string)};
 
     // Preprocessing
     t_preprocessing.start();
     #if NANODET || EFFICIENTDET || MOBNETSSD
-     auto resized_image = ResizeImage(imageInput, model.input_width, model.input_height);
+     auto resized_image = ResizeImage(imageInput, lre.input_width, lre.input_height);
      cv::Mat processed_image = preprocess_efficientdet(resized_image);
     #elif YOLO
      cv::Scalar background(124, 116, 104);
-     auto resized_and_centered_image = resizeAndCenterImage(imageInput, cv::Size(model.input_width,model.input_height), background);
+     auto resized_and_centered_image = resizeAndCenterImage(imageInput, cv::Size(lre.input_width,lre.input_height), background);
      cv::Mat processed_image = preprocess_yolo(resized_and_centered_image);
     #endif
     t_preprocessing.stop();
 
     // Infer
     t_inference.start();
-    model.infer(processed_image.data);
+    lre.infer(processed_image.data);
     t_inference.stop();
 
     // Post Processing
     t_postprocessing.start();
     t_op_transform.start();
     // Convert DLTensor to at::Tensor
-    auto outputs = convert_to_atTensor(model.getOutputs()[0]);
+    auto outputs = convert_to_atTensor(lre.getOutputs()[0]);
     #if EFFICIENTDET 
      auto tensors_ = effdet_tensors(outputs[0]);
     #elif NANODET || YOLO
      auto tensors_ = yolo_tensors(outputs[0]);
     #elif MOBNETSSD
-     auto tensors_ = ssd_tensors(outputs[0], model.input_width, model.input_height);
+     auto tensors_ = ssd_tensors(outputs[0], lre.input_width, lre.input_height);
     #endif
     t_op_transform.stop();
 
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 
   }
   print_detections(detections);
-  draw_boxes(detections, imgPath,model.input_width, model.input_height);
+  draw_boxes(detections, input_image_string,lre.input_width, lre.input_height);
 
   std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
   std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;

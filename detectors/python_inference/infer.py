@@ -26,9 +26,9 @@ POSTPROCESS_TORCH = True # False is not supported
 def main():
 
     parser = ArgumentParser(description="Run inference")
-    parser.add_argument("--path_to_model", type=str, default=".", help="Path to LRE object directory.")
+    parser.add_argument("--model_binary_path", type=str, default=".", help="Path to LRE object directory.")
     parser.add_argument(
-        "--input_image",
+        "--input_image_path",
         type=str,
         default="../../sample_images/bus.jpg",
         help="Path to input image.",
@@ -40,10 +40,10 @@ def main():
         help="Path to labels text file.",
     )
     parser.add_argument(
-        "--format",
+        "--model_format",
         type=str,
         default="efficientdet",
-        help="Model format to use for pre/post processing.",
+        help="Model model_format to use for pre/post processing.",
     )
     parser.add_argument(
         "--representation",
@@ -71,7 +71,7 @@ def main():
     )
     
     args = parser.parse_args()
-    # sys.path.append(str(Path(args.path_to_model))) # If postprocessor is in the model
+    # sys.path.append(str(Path(args.model_binary_path))) # If postprocessor is in the model
     # from processors import general_detection_postprocessor
     
     project_dir = os.path.abspath(os.path.join(os.getcwd(), os.path.pardir))
@@ -80,30 +80,30 @@ def main():
     from utils import detector_preprocessor, detector_postprocessor, utils
         
     # Model Factory
-    model_runtime = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
+    lre = LatentRuntimeEngine(str(Path(args.model_binary_path) / "modelLibrary.so"))
     use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
 
     if(use_fp16):
-        model_runtime.set_model_precision("float16")
-    print(model_runtime.get_metadata())
+        lre.set_model_precision("float16")
+    print(lre.get_metadata())
 
-    layout_shapes = utils.get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
+    layout_shapes = utils.get_layout_dims(lre.input_layouts, lre.input_shapes)
     input_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
     print("expected input size: " + str(input_size))
 
-    device = model_runtime.device_type
+    device = lre.device_type
     print("expected device: " + str(device))
     
     # Load Image and Labels
     if PREPROCESS_TORCH:
-        image = utils.load_image_pil(args.input_image)
+        image = utils.load_image_pil(args.input_image_path)
         print("image size: " + str(image.size))
     else:
-        image = utils.load_image_cv(args.input_image)
+        image = utils.load_image_cv(args.input_image_path)
         print("image size: " + str(image.shape))
     labels = utils.load_labels(args.labels)
     if USE_ALBUMENTATIONS:
-        albumentations = Path(args.path_to_model) / "processors" / "af_preprocessor.json"
+        albumentations = Path(args.model_binary_path) / "processors" / "af_preprocessor.json"
 
     # Pre-process
     if USE_ALBUMENTATIONS:
@@ -111,21 +111,21 @@ def main():
         transformed_image = detector_preprocessor.load_albumentations_preprocess(image, albumentations)
         # image should be cv, albumentations should return a torch
     else:
-        sized_image, transformed_image = detector_preprocessor.preprocess(image, args.format, input_size)
+        sized_image, transformed_image = detector_preprocessor.preprocess(image, args.model_format, input_size)
     print("input size: " + str(transformed_image.shape))
 
     # Run Inference
-    model_runtime.infer(transformed_image)
+    lre.infer(transformed_image)
     
     # Get outputs as a list of PyDLPack
-    outputs = model_runtime.get_outputs()
+    outputs = lre.get_outputs()
     output = outputs[0]
 
     # Post-process
     if POSTPROCESS_TORCH:
         import torch as T
         output_torch = T.from_dlpack(output)   
-        output = detector_postprocessor.postprocess(output_torch, max_det_per_image=args.max_det, prediction_confidence_threshold=args.confidence, iou_threshold=args.iou, height=input_size[0], width=input_size[1], model_output_format=args.format, device=device, deploy_env=args.representation)
+        output = detector_postprocessor.postprocess(output_torch, max_det_per_image=args.max_det, prediction_confidence_threshold=args.confidence, iou_threshold=args.iou, height=input_size[0], width=input_size[1], output_format=args.model_format, device=device, deploy_env=args.representation)
     else:
         import numpy as np
         output_numpy = np.from_dlpack(output)

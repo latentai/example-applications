@@ -1,7 +1,7 @@
 struct InputParams {
     std::string model_binary_path;
     int iterations;
-    std::string img_path;
+    std::string input_image_path;
     std::string label_file_path;
 };
 
@@ -12,16 +12,16 @@ enum class InputType {
 
 bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& params) {
     if (input_type == InputType::Classifier && argc != 5) {
-        std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations img_path label_file_path\n";
+        std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations input_image_path label_file_path\n";
         return false;
     }
     else if (input_type == InputType::Detector && argc != 4) {
-        std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations img_path\n";
+        std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations input_image_path\n";
         return false;
     }
 
     params.model_binary_path = argv[1];
-    params.img_path = argv[3];
+    params.input_image_path = argv[3];
 
     try {
         params.iterations = std::stoi(argv[2]);
@@ -37,10 +37,10 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
         return false;
     }
 
-    // Check if img_path file exists
-    std::ifstream img_file(params.img_path);
+    // Check if input_image_path file exists
+    std::ifstream img_file(params.input_image_path);
     if (!img_file) {
-        std::cerr << "Image file does not exist: " << params.img_path << std::endl;
+        std::cerr << "Image file does not exist: " << params.input_image_path << std::endl;
         return false;
     }
 
