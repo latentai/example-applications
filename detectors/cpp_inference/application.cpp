@@ -29,9 +29,14 @@ int main(int argc, char *argv[]) {
   int iterations = params.iterations;
   std::string imgPath = params.img_path;
   at::Tensor detections{};
+  bool use_fp16 = std::getenv("TVM_TENSORRT_USE_FP16") ? std::stoi(std::getenv("TVM_TENSORRT_USE_FP16")) != 0 : false;
   
   // Model Factory
   LRE::LatentRuntimeEngine model(model_binary);
+  if (use_fp16){
+    model.setModelPrecision("float16");
+    std::cout << "Running model as FP16" << std::endl;
+  }
   PrintModelMetadata(model);
 
   // WarmUp Phase 
