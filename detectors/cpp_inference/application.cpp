@@ -9,7 +9,6 @@
 #include <tvm/runtime/latentai/lre_cryption_service.hpp>
 
 #include "processors.hpp"
-#include "config.h"
 
 #include <timer_chrono.hpp>
 #include <image_manipulation.hpp>

@@ -6,7 +6,6 @@
 // *****************************************************************************/
 
 #include "processors.hpp"
-#include "config.h"
 
 cv::Mat resizeAndCenterImage(const cv::Mat& input, const cv::Size& outputSize, const cv::Scalar& backgroundColor)
 {

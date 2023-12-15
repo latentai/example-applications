@@ -32,6 +32,15 @@
 
 #include <ctime>
 
+#define CONFIDENCE_THRESHOLD 0.30 // 0.3 normally, just for nanodet 0.45
+#define IOU_THRESHOLD 0.45
+
+// Initialize model types
+#define NANODET 0
+#define EFFICIENTDET 0
+#define MOBNETSSD 0
+#define YOLO 0
+
 namespace fs = std::experimental::filesystem;
 
 static void monly_deleter(DLManagedTensor* self) { delete self; }

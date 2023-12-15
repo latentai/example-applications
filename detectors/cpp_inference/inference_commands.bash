@@ -41,19 +41,11 @@ for i in "${!models[@]}"; do
     model="${models[$i]}"
     path="${paths[$i]}"
 
-    model = 1
-
     echo "Running code for $model with path $path"
     FLOAT32_MODEL=$path/Float32-compile
     INT8_MODEL=$path/Int8-optimize
 
-    # Generate the config.h
-    echo "#ifndef CONFIG_H" > include/config.h
-    echo "#define CONFIG_H" >> include/config.h
-    echo "#define CONFIDENCE_THRESHOLD 0.30"  >> include/config.h # 0.3 normally, just for nanodet 0.45
-    echo "#define IOU_THRESHOLD 0.45"  >> include/config.h
-    echo "#define $model 1" >> include/config.h
-    echo "#endif // CONFIG_H" >> include/config.h
+    sed -i "s/#define $model .*/#define $model 1/"  include/processors.hpp
 
     # Compile
     mkdir build
