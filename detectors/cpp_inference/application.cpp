@@ -63,6 +63,9 @@ int main(int argc, char *argv[]) {
         auto resized_and_centered_image = resizeAndCenterImage(imageInput, cv::Size(lre.input_width,lre.input_height), background);
         processed_image = preprocess_yolo(resized_and_centered_image);
       }
+      else{
+        std::cerr << "Invalid model type, supported: YOLO, MOBNETSSD, EFFICIENTDET, NANODET\n";
+      }
     }
   
     t_preprocessing.stop();
@@ -89,6 +92,9 @@ int main(int argc, char *argv[]) {
       if (MODEL=="MOBNETSSD"){
         tensors_ = ssd_tensors(outputs[0], lre.input_width, lre.input_height);
         }
+      else{
+        std::cerr << "Invalid model type, supported: YOLO, MOBNETSSD, EFFICIENTDET, NANODET\n";
+      }
       }
     } 
     t_op_transform.stop();
