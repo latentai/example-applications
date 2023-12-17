@@ -36,10 +36,8 @@
 #define IOU_THRESHOLD 0.45
 
 // Initialize model types
-#define NANODET 0
-#define EFFICIENTDET 0
-#define MOBNETSSD 0
-#define YOLO 0
+constexpr const char* MODEL = "None";
+
 
 namespace fs = std::experimental::filesystem;
 

@@ -45,7 +45,8 @@ for i in "${!models[@]}"; do
     FLOAT32_MODEL=$path/Float32-compile
     INT8_MODEL=$path/Int8-optimize
 
-    sed -i "s/#define $model .*/#define $model 1/"  include/processors.hpp
+    sed -i "s/constexpr const char\* MODEL = .*/constexpr const char* MODEL = \"$model\";/" include/processors.hpp
+
 
     # Compile
     mkdir build

@@ -60,12 +60,13 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
   cv::Mat origImage = cv::imread(image_path);
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(WIDTH,HEIGHT);
-  #if YOLO
-   image_out = resizeAndCenterImage(origImage, dstSize, background);
-  #else
+  if (MODEL=="YOLO"){
+    image_out = resizeAndCenterImage(origImage, dstSize, background);
+  }
+  else{
     cv::Size image_size = cv::Size(WIDTH, HEIGHT);
     cv::resize(origImage, image_out, image_size,0,0,cv::INTER_NEAREST); 
-  #endif
+  }
 
   for (int i = 0; i < pred_boxes_x1y1x2y2.sizes()[0]; i++)
   {

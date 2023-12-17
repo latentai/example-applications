@@ -42,6 +42,8 @@ int main(int argc, char *argv[]) {
   // WarmUp Phase 
   lre.warmUp(1);
 
+  cv::Mat processed_image{};
+
   // Run pre, inference and post processing x iterations
   for (int j = 0; j < iterations; j++) {
     
@@ -49,14 +51,20 @@ int main(int argc, char *argv[]) {
 
     // Preprocessing
     t_preprocessing.start();
-    #if NANODET || EFFICIENTDET || MOBNETSSD
+    if(MODEL=="NANODET" || MODEL=="EFFICIENTDET" || MODEL=="MOBNETSSD")
+    {
      auto resized_image = ResizeImage(imageInput, lre.input_width, lre.input_height);
-     cv::Mat processed_image = preprocess_efficientdet(resized_image);
-    #elif YOLO
-     cv::Scalar background(124, 116, 104);
-     auto resized_and_centered_image = resizeAndCenterImage(imageInput, cv::Size(lre.input_width,lre.input_height), background);
-     cv::Mat processed_image = preprocess_yolo(resized_and_centered_image);
-    #endif
+     processed_image = preprocess_efficientdet(resized_image);
+    }
+    else {
+      if (MODEL=="YOLO")
+      {
+        cv::Scalar background(124, 116, 104);
+        auto resized_and_centered_image = resizeAndCenterImage(imageInput, cv::Size(lre.input_width,lre.input_height), background);
+        processed_image = preprocess_yolo(resized_and_centered_image);
+      }
+    }
+  
     t_preprocessing.stop();
 
     // Infer
@@ -69,13 +77,20 @@ int main(int argc, char *argv[]) {
     t_op_transform.start();
     // Convert DLTensor to at::Tensor
     auto outputs = convert_to_atTensor(lre.getOutputs()[0]);
-    #if EFFICIENTDET 
-     auto tensors_ = effdet_tensors(outputs[0]);
-    #elif NANODET || YOLO
-     auto tensors_ = yolo_tensors(outputs[0]);
-    #elif MOBNETSSD
-     auto tensors_ = ssd_tensors(outputs[0], lre.input_width, lre.input_height);
-    #endif
+    std::map<std::string, at::Tensor> tensors_{};
+    if (MODEL=="EFFICIENTDET"){
+     tensors_ = effdet_tensors(outputs[0]);
+    } 
+    else{
+      if (MODEL=="NANODET" || MODEL=="YOLO"){
+        tensors_ = yolo_tensors(outputs[0]);
+      }
+      else{
+      if (MODEL=="MOBNETSSD"){
+        tensors_ = ssd_tensors(outputs[0], lre.input_width, lre.input_height);
+        }
+      }
+    } 
     t_op_transform.stop();
 
     // NMS from Torchvision 

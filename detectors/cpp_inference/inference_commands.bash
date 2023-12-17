@@ -32,7 +32,8 @@ else
 fi
 echo $TORCH_PATH
 
-sed -i "s/#define $model .*/#define $model 1/"  include/processors.hpp
+sed -i "s/constexpr const char\* MODEL = .*/constexpr const char* MODEL = \"$model\";/" include/processors.hpp
+
 
 # Compile
 mkdir build
