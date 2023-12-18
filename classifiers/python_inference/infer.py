@@ -35,7 +35,7 @@ def main():
     args = parser.parse_args()
 
     # Load runtime
-    lre = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
+    lre = LatentRuntimeEngine(str(Path(args.model_binary_path) / "modelLibrary.so"))
     print(lre.get_metadata())
 
     # Set precision
@@ -49,7 +49,7 @@ def main():
     device = lre.device_type
 
     # Load image
-    input_image_path = args.input_image
+    input_image_path = args.input_image_path
     image = Image.open(input_image_path)
     
     # Apply preprocess transformations
