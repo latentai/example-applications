@@ -27,12 +27,12 @@ INT8_ACTIVATIONS=$INT8_MODEL/.activations/ # can we throw an error if this does 
 
 echo "FP32..."
 mkdir -p $FLOAT32_MODEL/trt-cache
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache python3 infer.py --model_binary_path $FLOAT32_MODEL  --input_image $IMAGE_PATH  --labels $LABELS_PATH --model_format $FORMAT --representation $REPRESENTATION --max_det $MAX_DET --confidence $CONF_THRESHOLD --iou $IOU_THRESHOLD
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache python3 infer.py --model_binary_path $FLOAT32_MODEL  --input_image $IMAGE_PATH  --labels $LABELS_PATH --model_format $MODEL_FORMAT --representation $REPRESENTATION --max_det $MAX_DET --confidence $CONF_THRESHOLD --iou $IOU_THRESHOLD
 
 echo "FP16..."
 mkdir -p $FLOAT32_MODEL/trt-cache
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache TVM_TENSORRT_USE_FP16=1 python3 infer.py --model_binary_path $FLOAT32_MODEL  --input_image $IMAGE_PATH --labels $LABELS_PATH --model_format $FORMAT --representation $REPRESENTATION --max_det $MAX_DET --confidence $CONF_THRESHOLD --iou $IOU_THRESHOLD
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache TVM_TENSORRT_USE_FP16=1 python3 infer.py --model_binary_path $FLOAT32_MODEL  --input_image $IMAGE_PATH --labels $LABELS_PATH --model_format $MODEL_FORMAT --representation $REPRESENTATION --max_det $MAX_DET --confidence $CONF_THRESHOLD --iou $IOU_THRESHOLD
 
 echo "INT8..."
 mkdir -p $INT8_MODEL/trt-cache
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_ACTIVATIONS python3 infer.py --model_binary_path $INT8_MODEL --input_image $IMAGE_PATH --labels $LABELS_PATH --model_format $FORMAT --representation $REPRESENTATION --max_det $MAX_DET --confidence $CONF_THRESHOLD --iou $IOU_THRESHOLD
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_ACTIVATIONS python3 infer.py --model_binary_path $INT8_MODEL --input_image $IMAGE_PATH --labels $LABELS_PATH --model_format $MODEL_FORMAT --representation $REPRESENTATION --max_det $MAX_DET --confidence $CONF_THRESHOLD --iou $IOU_THRESHOLD
