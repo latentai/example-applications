@@ -6,8 +6,6 @@ import numpy as np
 import os
 from pathlib import Path
 
-VISUALIZATION_LIBRARY = 'pil' # 'pil' 'cv2'
-
 ########################
 ##### Data loaders #####
 ########################
@@ -16,7 +14,6 @@ def load_labels(path):
         return f.read().strip().split("\n")
 
 def load_image_pil(path):
-    # perhaps add a cv version too?
     from PIL import Image
     image = Image.open(path)
     return image
@@ -24,7 +21,6 @@ def load_image_pil(path):
 def load_image_cv(path):
     image = cv2.imread(path, )
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # cv reads in BGR
-    # cv2.imwrite('/workspace/example-applications/sample_images/cv2_im.jpg',image)
     return image
 
 ########################
@@ -78,62 +74,31 @@ def plot_one_box(box, img, color, label=None, line_thickness=None):
 
     return img
 
-def plot_boxes(deploy_env, image, labels, output, args):
-    if deploy_env == 'leip':
-        from representations.boundingboxes.utils import BBFormat
-        rgb_img = image.convert("RGB")
-        out_im = np.array(cv2.cvtColor(np.array(rgb_img), cv2.COLOR_BGR2RGB))
-        threshold = 0.3
-        for bb in output:
-            for i in range(0,len(bb)):
-                if bb[i].get_confidence() > threshold:
-                    out_im = plot_one_box(
-                        bb[i].get_coordinates(BBFormat.absolute_xyx2y2, image_size=rgb_img.size),
-                        out_im,
-                        color=(255, 0, 0),
-                        label=labels[bb[i].get_class_id()],
-                    )
+def plot_boxes(image, output, labels): 
+    from torchvision.utils import draw_bounding_boxes
+    pil_transform = transforms.PILToTensor()
+    output_image = pil_transform(image)
+    for bb in output:
+        for i in range(0,len(bb)):
+            box = bb[i][0:4]
+            box[0] = box[0] #*orig_size[0]/image_size[0]
+            box[1] = box[1] #*orig_size[1]/image_size[1]
+            box[2] = box[2] #*orig_size[0]/image_size[0]
+            box[3] = box[3] #*orig_size[1]/image_size[1]
+            box = box.unsqueeze(0)
+            label = [labels[int(bb[i][5])]]
+            output_image = draw_bounding_boxes(output_image, box, label, 
+                width=5, colors="blue", fill=False) 
+                # font="serif", font_size=30)
+    
+    return output_image
 
-    elif deploy_env == 'torch' and VISUALIZATION_LIBRARY == 'pil':
-        from torchvision.utils import draw_bounding_boxes
-        pil_transform = transforms.PILToTensor()
-        out_im = pil_transform(image)
-        for bb in output:
-            for i in range(0,len(bb)):
-                box = bb[i][0:4]
-                box[0] = box[0] #*orig_size[0]/image_size[0]
-                box[1] = box[1] #*orig_size[1]/image_size[1]
-                box[2] = box[2] #*orig_size[0]/image_size[0]
-                box[3] = box[3] #*orig_size[1]/image_size[1]
-                box = box.unsqueeze(0)
-                label = [labels[int(bb[i][5])]]
-                out_im = draw_bounding_boxes(out_im, box, label, 
-                    width=5, colors="blue", fill=False) 
-                    # font="serif", font_size=30)
-        pil_to_transform = transforms.ToPILImage()
-        out_im = pil_to_transform(out_im)
-    
-    elif deploy_env == 'torch' and VISUALIZATION_LIBRARY == 'cv2':
-        # rgb_img = image.convert("RGB")
-        out_im = np.array(cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB))
-        for bb in output:
-            for i in range(0,len(bb)):
-                box = bb[i][0:4]
-                # box = box.unsqueeze(0)
-                label = labels[int(bb[i][5])]
-                out_im = plot_one_box(
-                    box,
-                    out_im,
-                    color=(255, 0, 0),
-                    label=label,
-                )
-    
-    p = os.path.splitext(args.input_image_path)
+
+def save_image_pil(input, image_path):
+    pil_to_transform = transforms.ToPILImage()
+    output_image = pil_to_transform(input)
+
+    p = os.path.splitext(image_path)
     output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
-    if deploy_env == 'leip':
-        cv2.imwrite(output_filename, out_im)
-    elif deploy_env == 'torch' and VISUALIZATION_LIBRARY == 'pil':
-        out_im.save(output_filename)
-    elif deploy_env == 'torch' and VISUALIZATION_LIBRARY == 'cv2':
-        cv2.imwrite(output_filename, out_im)
+    output_image.save(output_filename)
     return output_filename
