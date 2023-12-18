@@ -104,7 +104,7 @@ def main():
     
     # Generate visualizations
     output_image = utils.plot_boxes(sized_image, output, labels)
-    output_filename = utils.plot_boxes(output_image, args.input_image_path)
+    output_filename = utils.save_image_pil(output_image, args.input_image_path)
     print("Annotated image written to", output_filename)
 
 if __name__ == "__main__":
