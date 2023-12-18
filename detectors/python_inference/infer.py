@@ -72,9 +72,7 @@ def main():
     # Read metadata from runtime
     layout_shapes = utils.get_layout_dims(lre.input_layouts, lre.input_shapes)
     input_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
-    print("expected input size: " + str(input_size))
     device = lre.device_type
-    print("expected device: " + str(device))
     
     # Load Image and Labels
     image = utils.load_image_pil(args.input_image_path)
