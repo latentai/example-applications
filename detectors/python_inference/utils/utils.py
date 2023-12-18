@@ -6,6 +6,7 @@ import numpy as np
 import os
 from pathlib import Path
 
+
 ########################
 ##### Data loaders #####
 ########################
@@ -13,15 +14,18 @@ def load_labels(path):
     with open(path, "r") as f:
         return f.read().strip().split("\n")
 
+
 def load_image_pil(path):
     from PIL import Image
     image = Image.open(path)
     return image
 
+
 def load_image_cv(path):
     image = cv2.imread(path, )
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # cv reads in BGR
     return image
+
 
 ########################
 ### Metadata readers ###
@@ -43,6 +47,7 @@ def get_layout_dims(layout_list, shape_list):
         result.append(layout_dict)
     
     return result
+
 
 ########################
 ##### Box plotters #####
@@ -74,22 +79,19 @@ def plot_one_box(box, img, color, label=None, line_thickness=None):
 
     return img
 
+
 def plot_boxes(image, output, labels): 
-    from torchvision.utils import draw_bounding_boxes
-    pil_transform = transforms.PILToTensor()
-    output_image = pil_transform(image)
+    output_image = np.array(image)
     for bb in output:
         for i in range(0,len(bb)):
             box = bb[i][0:4]
-            box[0] = box[0] #*orig_size[0]/image_size[0]
-            box[1] = box[1] #*orig_size[1]/image_size[1]
-            box[2] = box[2] #*orig_size[0]/image_size[0]
-            box[3] = box[3] #*orig_size[1]/image_size[1]
-            box = box.unsqueeze(0)
-            label = [labels[int(bb[i][5])]]
-            output_image = draw_bounding_boxes(output_image, box, label, 
-                width=5, colors="blue", fill=False) 
-                # font="serif", font_size=30)
+            label = labels[int(bb[i][5])]
+            output_image = plot_one_box(
+                box,
+                output_image,
+                color=(0, 0, 255),
+                label=label,
+            )
     
     return output_image
 
