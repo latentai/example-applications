@@ -4,27 +4,11 @@
 #  and is released under the "Latent AI Commercial Software License". Please see the LICENSE
 #  file that should have been included as part of this package.
 
-def preprocess(image, input_transform, input_size):
-    """
-    Args
-        image: PIL image.
-        input_transform: By default, efficientdet preprocess transforms are applied.
-        Any other recipe requires setting appropriate input_transform and
-        any new model requires writing custom transforms to match af_preprocess.json.
-        input_size: Input (height, width) expected by the model.
-    Returns
-        sized_image: Input PIL image with resizing and padding for visualization.
-        transformed_image: Torch tensor to feed into the model.
-    """
-    
-    # Redirect to a relevant transform library.
-    sized_image, transformed_image = torch_preprocess_transforms(image, input_transform, input_size)
+import torchvision.transforms as transforms
 
-    return sized_image, transformed_image
 
 ## Pytorch transforms
 def torch_preprocess_transforms(image, input_transform, input_size):
-    import torchvision.transforms as transforms
 
     ## Transforms to resize and pad
     resize_transform = transforms.Resize(input_size)
@@ -78,4 +62,23 @@ def torch_preprocess_transforms(image, input_transform, input_size):
         transformed_image = resize_center_color1_transform(image)
         transformed_image = float_normalize(transformed_image)
     
+    return sized_image, transformed_image
+
+
+def preprocess(image, input_transform, input_size):
+    """
+    Args
+        image: PIL image.
+        input_transform: By default, efficientdet preprocess transforms are applied.
+        Any other recipe requires setting appropriate input_transform and
+        any new model requires writing custom transforms to match af_preprocess.json.
+        input_size: Input (height, width) expected by the model.
+    Returns
+        sized_image: Input PIL image with resizing and padding for visualization.
+        transformed_image: Torch tensor to feed into the model.
+    """
+    
+    # Redirect to a relevant transform library.
+    sized_image, transformed_image = torch_preprocess_transforms(image, input_transform, input_size)
+
     return sized_image, transformed_image
