@@ -23,20 +23,13 @@ def torch_preprocess_transforms(image, input_transform, input_size):
         resize_var = int(input_size[0] * width_height_image)
     filler = tuple(int(a - b) for a, b in zip(input_size, new_image_size))
     resize_center_color1_transform = transforms.Compose([
-        # transforms.Resize(input_size)
         transforms.Resize(resize_var),  # Equivalent to LongestMaxSize
         transforms.Pad ((0, 0, filler[0], filler[1]), fill=(124, 116, 104), padding_mode='constant'),  # Equivalent to PadIfNeeded
     ])
-    ## Resize is like shortestmaxsize, so I'm forcing 1080 to be 512 by resizing with 512/1080*810.
-    ## Since height then needs padding, I do 512-384. This does not center things.
-    ## Still the boxes are off.
     resize_center_color2_transform = transforms.Compose([
-        # transforms.Resize(input_size)
         transforms.Resize(resize_var),  # Equivalent to LongestMaxSize
         transforms.Pad((int(filler[0]/2), int(filler[1]/2), int(filler[0]/2), int(filler[1]/2)), fill=(128, 128, 128), padding_mode='constant'),  # Equivalent to PadIfNeeded
     ])
-    ## padding makes it look wrong. Why?
-    # if input is padded, the visual image should also be padded
     
     ## Transforms to normalize and tensorize.
     imagenet_normalize = transforms.Compose([

@@ -58,9 +58,6 @@ def main():
     
     args = parser.parse_args()
     
-    # project_dir = os.path.abspath(os.path.join(os.getcwd(), os.path.pardir))
-    # sys.path.append(project_dir)
-    
     from utils import detector_preprocessor, detector_postprocessor, utils
         
     # Load runtime
