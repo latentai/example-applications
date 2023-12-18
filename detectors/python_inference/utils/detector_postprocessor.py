@@ -5,9 +5,7 @@
 #  file that should have been included as part of this package.
 
 import torch
-from numpy import ndarray
 from torchvision.ops.boxes import batched_nms
-import itertools
 
 
 def post_process_efficientdet(

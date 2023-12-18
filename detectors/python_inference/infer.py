@@ -9,7 +9,6 @@
 
 import os
 import sys
-import cv2
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -58,26 +57,25 @@ def main():
     )
     
     args = parser.parse_args()
-    # sys.path.append(str(Path(args.model_binary_path))) # If postprocessor is in the model
-    # from processors import general_detection_postprocessor
     
-    project_dir = os.path.abspath(os.path.join(os.getcwd(), os.path.pardir))
-    sys.path.append(project_dir)
+    # project_dir = os.path.abspath(os.path.join(os.getcwd(), os.path.pardir))
+    # sys.path.append(project_dir)
     
     from utils import detector_preprocessor, detector_postprocessor, utils
         
-    # Model Factory
+    # Load runtime
     lre = LatentRuntimeEngine(str(Path(args.model_binary_path) / "modelLibrary.so"))
-    use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
-
-    if(use_fp16):
-        lre.set_model_precision("float16")
     print(lre.get_metadata())
 
+    # Set precision
+    use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
+    if(use_fp16):
+        lre.set_model_precision("float16")
+
+    # Read metadata from runtime
     layout_shapes = utils.get_layout_dims(lre.input_layouts, lre.input_shapes)
     input_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
     print("expected input size: " + str(input_size))
-
     device = lre.device_type
     print("expected device: " + str(device))
     
