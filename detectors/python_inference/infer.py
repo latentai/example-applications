@@ -8,14 +8,12 @@
 #!/usr/bin/env python
 
 import os
-import sys
-
-from argparse import ArgumentParser
-from pathlib import Path
-
-from pylre import LatentRuntimeEngine
 
 def main():
+    from argparse import ArgumentParser
+    from pathlib import Path
+    
+    from pylre import LatentRuntimeEngine
 
     parser = ArgumentParser(description="Run inference")
     parser.add_argument("--model_binary_path", type=str, default=".", help="Path to LRE object directory.")

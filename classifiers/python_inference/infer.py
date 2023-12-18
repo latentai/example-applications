@@ -6,6 +6,7 @@
 # *****************************************************************************/
 
 #!/usr/bin/env python
+import os
 import torch as T
 import torchvision.transforms as transforms
 from PIL import Image
@@ -17,50 +18,56 @@ def main():
     from pylre import LatentRuntimeEngine
 
     parser = ArgumentParser(description="Run inference")
-    parser.add_argument("--path_to_model", type=str, default=".", help="Path to LRE object directory.")
+    parser.add_argument("--model_binary_path", type=str, default=".", help="Path to LRE object directory.")
     parser.add_argument(
-        "--input_image",
+        "--input_image_path",
         type=str,
-        default="/latentai/recipes/classifiers/images/penguin.jpg",
+        default="../../sample_images/apple.jpg",
         help="Path to input image.",
     )
     parser.add_argument(
         "--labels",
         type=str,
-        default="/latentai/recipes/classifiers/inference/python/labels.txt",
+        default="labels.txt",
         help="Path to labels text file.",
     )
+
     args = parser.parse_args()
 
-    # Model Factory
-    model_runtime = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
-    print(model_runtime.get_metadata())
+    # Load runtime
+    lre = LatentRuntimeEngine(str(Path(args.path_to_model) / "modelLibrary.so"))
+    print(lre.get_metadata())
 
-    # WarmUp Phase
-    model_runtime.warm_up(1)
+    # Set precision
+    use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
+    if(use_fp16):
+        lre.set_model_precision("float16")
     
-    # Run pre, inference and post processing x iterations
+    # Read metadata from runtime
+    layout_shapes = get_layout_dims(lre.input_layouts, lre.input_shapes)
+    input_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
+    device = lre.device_type
+
+    # Load image
     input_image_path = args.input_image
     image = Image.open(input_image_path)
-
-    layout_shapes = get_layout_dims(model_runtime.input_layouts, model_runtime.input_shapes)
-    image_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
     
-    resize_transform = transforms.Resize(image_size)
+    # Apply preprocess transformations
+    resize_transform = transforms.Resize(input_size)
     resized_image = resize_transform(image)
     normalize_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    # Apply the normalization transformation
     resized_image_normalized = normalize_transform(resized_image)
 
     # Run inference
-    model_runtime.infer(resized_image_normalized)
+    lre.infer(resized_image_normalized)
     
     # Post-process    
-    outputs = model_runtime.get_outputs()
+    outputs = lre.get_outputs()
 
+    # Visualize
     output = outputs[0] 
     output = T.from_dlpack(output)
     op = postprocess_top_one(output)
