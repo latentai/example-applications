@@ -32,24 +32,43 @@ else
 fi
 echo $TORCH_PATH
 
-sed -i "s/constexpr const char\* MODEL = .*/constexpr const char* MODEL = \"$model\";/" include/processors.hpp
+if [ ${#models[@]} -ne ${#paths[@]} ]; then
+    echo "Error: The number of models and paths do not match."
+    exit 1
+fi
+
+for i in "${!models[@]}"; do
+    model="${models[$i]}"
+    path="${paths[$i]}"
+
+    echo "Running code for $model with path $path"
+    FLOAT32_MODEL=$path/Float32-compile
+    INT8_MODEL=$path/Int8-optimize
+
+    sed -i "s/constexpr const char\* MODEL = .*/constexpr const char* MODEL = \"$model\";/" include/processors.hpp
 
 
-# Compile
-mkdir build
-cd build
-cmake -DCMAKE_PREFIX_PATH=$TORCH_PATH ..
-make -j 8
-cd ..
+    # Compile
+    mkdir build
+    cd build
+    cmake -DCMAKE_PREFIX_PATH=$TORCH_PATH ..
+    make -j 8
+    cd ..
 
-# FP32
-mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
 
-# FP16
-mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+    # FP32
+    mkdir -p $FLOAT32_MODEL/trt-cache/
+    TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
 
-# INT8
-mkdir -p $INT8_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+    # FP16
+    mkdir -p $FLOAT32_MODEL/trt-cache/
+    TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+
+    # INT8
+    mkdir -p $INT8_MODEL/trt-cache/
+    TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+
+done
+
+
+

@@ -7,15 +7,17 @@
 
 #!/bin/bash
 
-ARCH=aarch64_cuda_xavier_jp4
-PATH_TO_DETECTOR_MODELS=/home/dev/models/recipe_hub
+ARCH=aarch64
+MODEL_PATH=/home/pi/models/recipe_hub/yolov5n/$ARCH
 
-models=(NANODET MOBNETSSD EFFICIENTDET YOLO YOLO) # supported detector models
-paths=($PATH_TO_DETECTOR_MODELS/nanodet/$ARCH
-       $PATH_TO_DETECTOR_MODELS/ssdn/$ARCH
-       $PATH_TO_DETECTOR_MODELS/efficientdetn/$ARCH
-       $PATH_TO_DETECTOR_MODELS/yolov5n/$ARCH
-       $PATH_TO_DETECTOR_MODELS/yolov8/$ARCH)
+model=YOLO # Detector architecture  supported YOLO, MOBNETSSD, EFFICIENTDET, NANODET
+
+if [ -v MODEL_PATH ];
+then
+    echo "Models to be run from" $MODEL_PATH
+    FLOAT32_MODEL=$MODEL_PATH/Float32-compile
+    INT8_MODEL=$MODEL_PATH/Int8-optimize
+fi
 
 # Current known issue: These applications require a different libtorch
 # (libtorch-cxx11-abi-shared-with-deps-2.0.1%2Bcu118.zip) installed that
@@ -42,13 +44,13 @@ cmake -DCMAKE_PREFIX_PATH=$TORCH_PATH ..
 make -j 8
 cd ..
 
-# FP32
-mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+# # FP32
+# mkdir -p $FLOAT32_MODEL/trt-cache/
+# TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
 
-# FP16
-mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+# # FP16
+# mkdir -p $FLOAT32_MODEL/trt-cache/
+# TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
 
 # INT8
 mkdir -p $INT8_MODEL/trt-cache/

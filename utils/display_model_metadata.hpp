@@ -25,4 +25,7 @@ void PrintModelMetadata(LRE::LatentRuntimeEngine &model){
   std::cout << std::left << std::setw(12) << "SDK version: \n";
   std::cout << std::setw(12) << model.getSDKVersion() << "\n";
   std::cout << std::setw(12) << "----------------------------------------\n";
+  std::cout << std::left << std::setw(12) << "is TRT: \n";
+  std::cout << std::setw(12) << model.isTRT() << "\n";
+  std::cout << std::setw(12) << "----------------------------------------\n";
 }

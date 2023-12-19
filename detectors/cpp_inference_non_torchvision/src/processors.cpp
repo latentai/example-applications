@@ -46,15 +46,15 @@ cv::Mat preprocess_yolo(cv::Mat &ImageInput) {
 }
 
 
-at::Tensor clip_boxes_xyxy(at::Tensor boxes, at::Tensor size)
+torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size)
 {
   boxes = boxes.clamp(0);
-  auto sz = at::cat({size, size}, 0);
+  auto sz = torch::cat({size, size}, 0);
   boxes = boxes.min(sz);
   return boxes;
 }
 
-void draw_boxes(at::Tensor pred_boxes_x1y1x2y2, std::string image_path, float WIDTH, float HEIGHT)
+void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float WIDTH, float HEIGHT)
 {
   cv::Mat image_out{};
   cv::Mat origImage = cv::imread(image_path);
@@ -93,112 +93,48 @@ at::Tensor convert_to_atTensor(DLTensor *dLTensor)
   return op;
 }
 
-std::vector<at::Tensor> convert_to_atTensors(std::vector<DLTensor *> dLTensors)
-{
-  std::vector<at::Tensor> atTensors;
-  for (int i = 0; i < dLTensors.size() ; i++){
-
-    DLManagedTensor* output = new DLManagedTensor{};
-    output->dl_tensor = *dLTensors[i];
-    output->deleter = &monly_deleter;
-
-    auto op = at::fromDLPack(output);
-    atTensors.emplace_back(op);
-  }
-  return atTensors;
+at::Tensor indicesToTensor(const std::vector<int>& indices, const at::TensorOptions& options) {
+    at::Tensor result = at::empty({static_cast<int64_t>(indices.size())}, options);
+    for (size_t i = 0; i < indices.size(); ++i) {
+        result[i] = indices[i];
+    }
+    return result;
 }
 
-
-at::Tensor xywh2xyxy(const at::Tensor& x) {
-
-    at::Tensor y = x.clone();
-
-    // Compute top-left and bottom-right coordinates
-    y.index({at::indexing::Slice(), 0}) = x.index({at::indexing::Slice(), 0}) - x.index({at::indexing::Slice(), 2}) / 2;  // top left x
-    y.index({at::indexing::Slice(), 1}) = x.index({at::indexing::Slice(), 1}) - x.index({at::indexing::Slice(), 3}) / 2;  // top left y
-    y.index({at::indexing::Slice(), 2}) = x.index({at::indexing::Slice(), 0}) + x.index({at::indexing::Slice(), 2}) / 2;  // bottom right x
-    y.index({at::indexing::Slice(), 3}) = x.index({at::indexing::Slice(), 1}) + x.index({at::indexing::Slice(), 3}) / 2;  // bottom right y
-
-    return y;
+std::vector<float> tensorToScores(const at::Tensor& scores) {
+    std::vector<float> scores_vec(scores.size(0));
+    std::memcpy(scores_vec.data(), scores.data_ptr<float>(), sizeof(float) * scores.size(0));
+    return scores_vec;
 }
 
-void clip_boxes(at::Tensor& boxes,  int img_height, int img_width) {
-        boxes.index_put_({at::indexing::Slice(), 0}, at::clamp(boxes.index({at::indexing::Slice(), 0}), 0, img_width));  // x1
-        boxes.index_put_({at::indexing::Slice(), 1}, at::clamp(boxes.index({at::indexing::Slice(), 1}), 0, img_height));  // y1
-        boxes.index_put_({at::indexing::Slice(), 2}, at::clamp(boxes.index({at::indexing::Slice(), 2}), 0, img_width));  // x2
-        boxes.index_put_({at::indexing::Slice(), 3}, at::clamp(boxes.index({at::indexing::Slice(), 3}), 0, img_height));  // y2
+std::vector<cv::Rect> tensorToRects(const at::Tensor& boxes) {
+    std::vector<cv::Rect> rects;
+    for (int i = 0; i < boxes.size(0); ++i) {
+        int x1 = boxes[i][0].item<float>();
+        int y1 = boxes[i][1].item<float>();
+        int x2 = boxes[i][2].item<float>();
+        int y2 = boxes[i][3].item<float>();
+        rects.push_back(cv::Rect(x1, y1, x2 - x1, y2 - y1));
+    }
+    return rects;
+}
+
+at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold) {
+    if (boxes.numel() == 0) {
+        return at::empty({0}, at::kFloat).to(boxes.device());
     }
 
-at::Tensor decode_yolov5(const at::Tensor& preds, int img_height, int img_width) {
-    at::Tensor bboxes, conf, scores;
-    
-    std::vector<at::Tensor> split_tensors = preds.split_with_sizes({4, 1, preds.size(2) - 5}, 2);
-    
-    // Access individual tensors
-    bboxes = split_tensors[0];
-    conf = split_tensors[1];
-    scores = split_tensors[2];
-    scores = scores * conf;  // final_conf = obj_conf * cls_conf
+    auto max_coordinate = boxes.max();
+    auto offsets = classes * (max_coordinate + at::ones({1}).to(boxes.device()));
+    auto boxes_for_nms = boxes + offsets.index({at::indexing::Slice(), at::indexing::None});
 
-    // Apply coordinate transformations
-    std::vector<at::Tensor> transformed_bboxes;
-    for (int i = 0; i < bboxes.size(0); ++i) {
-        at::Tensor bbox = bboxes.index({i, at::indexing::Slice(), at::indexing::Slice()});
-        at::Tensor transformed_bbox = xywh2xyxy(bbox);
-        clip_boxes(transformed_bbox, img_height, img_width);  // This is an inplace transformation
-        transformed_bboxes.push_back(transformed_bbox);
-    }
+    auto cv_boxes = tensorToRects(boxes_for_nms);
+    auto cv_scores = tensorToScores(scores);
 
-    at::Tensor transformed_bboxes_tensor = at::stack(transformed_bboxes, 0);
+    std::vector<int> indices;
+    cv::dnn::NMSBoxes(cv_boxes, cv_scores, 0.0, iou_threshold, indices);
 
-    // Concatenate the transformed bounding boxes and scores
-    at::Tensor final_output = at::cat({transformed_bboxes_tensor, scores}, 2);
-
-    return final_output;  // Format is batch_size x num_anchors x (4 + num_classes)
-}
-
-at::Tensor decode_yolov8(const at::Tensor& preds, int img_height, int img_width) {
-    at::Tensor bboxes, scores;
-    
-    auto decoded_preds = preds.permute({0, 2, 1});
-
-    std::vector<at::Tensor> split_tensors = decoded_preds.split_with_sizes({4, decoded_preds.size(2) - 4}, 2);
-    
-    // Access individual tensors
-    bboxes = split_tensors[0];
-    scores = split_tensors[1];
-
-    // Apply coordinate transformations
-    std::vector<at::Tensor> transformed_bboxes;
-    for (int i = 0; i < bboxes.size(0); ++i) {
-        at::Tensor bbox = bboxes.index({i, at::indexing::Slice(), at::indexing::Slice()});
-        at::Tensor transformed_bbox = xywh2xyxy(bbox);
-        clip_boxes(transformed_bbox, img_height, img_width);  // This is an inplace transformation
-        transformed_bboxes.push_back(transformed_bbox);
-    }
-
-    at::Tensor transformed_bboxes_tensor = at::stack(transformed_bboxes, 0);
-
-    // Concatenate the transformed bounding boxes and scores
-    at::Tensor final_output = at::cat({transformed_bboxes_tensor, scores}, 2);
-
-    return final_output;  // Format is batch_size x num_anchors x (4 + num_classes)
-}
-
-at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold)
-{
-  if(boxes.numel() == 0)
-  {
-    return at::empty({0}, at::kFloat).to(boxes.device());
-  }
-
-  auto max_coordinate = boxes.max();
-  auto offsets =  classes * (max_coordinate + at::ones({1}).to(boxes.device()));
-  auto boxes_for_nms = boxes + offsets.index({at::indexing::Slice(), at::indexing::None});
-  auto result = vision::ops::nms(boxes_for_nms,scores,iou_threshold);
-
-  return result;
-
+    return indicesToTensor(indices, boxes.options());
 }
 
 std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output)
@@ -212,24 +148,16 @@ std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output)
   return effdet_tensors_;
 }
 
-std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output, float confidence_threshold)
+std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output)
 {
   std::map<std::string, at::Tensor> yolo_tensors_;
-
-  output = at::squeeze(output,0);
 
   yolo_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
 
   auto class_scores = output.index({at::indexing::Slice(),at::indexing::Slice(4,at::indexing::None)});
 
-  yolo_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(at::kFloat);
+  yolo_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(torch::kFloat32);
   yolo_tensors_["scores"] = std::get<0>(class_scores.max(1));
-
-  auto filtered_scores = at::where(yolo_tensors_["scores"] > confidence_threshold);
-
-  yolo_tensors_["boxes"] =   yolo_tensors_["boxes"].index({filtered_scores[0]});
-  yolo_tensors_["classes"] =   yolo_tensors_["classes"].index({filtered_scores[0]});
-  yolo_tensors_["scores"] =   yolo_tensors_["scores"].index({filtered_scores[0]});
 
 
   return yolo_tensors_;

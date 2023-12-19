@@ -78,11 +78,8 @@ int main(int argc, char *argv[]) {
     // Post Processing
     t_postprocessing.start();
     t_op_transform.start();
-
-
     // Convert DLTensor to at::Tensor
     auto outputs = convert_to_atTensor(lre.getOutputs()[0]);
-  
     std::map<std::string, at::Tensor> tensors_{};
     if (MODEL=="EFFICIENTDET"){
      tensors_ = effdet_tensors(outputs[0]);
@@ -90,9 +87,6 @@ int main(int argc, char *argv[]) {
     else{
       if (MODEL=="NANODET" || MODEL=="YOLO"){
         tensors_ = yolo_tensors(outputs[0]);
-
-        auto decoded_preds = decode_yolov8(outputs,model.input_width,model.input_height);
-
       }
       else{
       if (MODEL=="MOBNETSSD"){
@@ -107,11 +101,14 @@ int main(int argc, char *argv[]) {
 
     // NMS from Torchvision 
     t_nms.start();
-    auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"], 0.4);
+    auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"], IOU_THRESHOLD);
     t_nms.stop();
 
     // TopK Filter
     result = result.slice(0,0,100);
+    if (result.defined() && result.scalar_type() != at::kLong) {
+    result = result.to(at::kLong);
+    }
 
     tensors_["boxes"] = tensors_["boxes"].index({result});
     tensors_["classes"] = tensors_["classes"].index({result,at::indexing::None});
@@ -124,15 +121,14 @@ int main(int argc, char *argv[]) {
     t_postprocessing.stop();
 
   }
-  
   print_detections(detections);
   draw_boxes(detections, input_image_string,lre.input_width, lre.input_height);
 
-  std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
-  std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
-  std::cout << "Average Output Data Manipulation Time: " << t_op_transform.averageElapsedMilliseconds() << " ms" << std::endl;
-  std::cout << "Average NMS Time: " << t_nms.averageElapsedMilliseconds() << " ms" << std::endl;
-  std::cout << "Average Postprocessing Time: " << t_postprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
+  // std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
+  // std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
+  // std::cout << "Average Output Data Manipulation Time: " << t_op_transform.averageElapsedMilliseconds() << " ms" << std::endl;
+  // std::cout << "Average NMS Time: " << t_nms.averageElapsedMilliseconds() << " ms" << std::endl;
+  // std::cout << "Average Postprocessing Time: " << t_postprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
 
 
 }
