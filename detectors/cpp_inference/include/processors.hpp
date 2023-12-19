@@ -41,13 +41,19 @@ cv::Mat preprocess_efficientdet(cv::Mat &imageInput);
 cv::Mat preprocess_yolo(cv::Mat &ImageInput);
  
 at::Tensor convert_to_atTensor(DLTensor* dLTensor);
+std::vector<at::Tensor> convert_to_atTensors(std::vector<DLTensor *> dLTensors);
+
+at::Tensor decode_yolov5(const at::Tensor& preds, int img_height, int img_width);
+at::Tensor decode_yolov8(const at::Tensor& preds, int img_height, int img_width);
+
+
 at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold);
 
 std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output);
-std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output);
+std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output,float confidence_threshold);
 std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int height);
 
 
-void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
+void draw_boxes(at::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
 std::string date_stamp();
 void print_detections(at::Tensor detections);

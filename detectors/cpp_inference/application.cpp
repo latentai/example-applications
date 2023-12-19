@@ -63,20 +63,25 @@ int main(int argc, char *argv[]) {
     // Post Processing
     t_postprocessing.start();
     t_op_transform.start();
+
+
     // Convert DLTensor to at::Tensor
     auto outputs = convert_to_atTensor(model.getOutputs()[0]);
     #if EFFICIENTDET 
-     auto tensors_ = effdet_tensors(outputs[0]);
+    auto tensors_ = effdet_tensors(outputs[0]);
     #elif NANODET || YOLO
-     auto tensors_ = yolo_tensors(outputs[0]);
+    
+    auto decoded_preds = decode_yolov8(outputs,model.input_width,model.input_height);
+    
+    auto tensors_ = yolo_tensors(decoded_preds,CONFIDENCE_THRESHOLD);
     #elif MOBNETSSD
-     auto tensors_ = ssd_tensors(outputs[0], model.input_width, model.input_height);
+    auto tensors_ = ssd_tensors(outputs[0], model.input_width, model.input_height);
     #endif
     t_op_transform.stop();
 
     // NMS from Torchvision 
     t_nms.start();
-    auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"], IOU_THRESHOLD);
+    auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"], 0.4);
     t_nms.stop();
 
     // TopK Filter
@@ -93,8 +98,9 @@ int main(int argc, char *argv[]) {
     t_postprocessing.stop();
 
   }
+  
   print_detections(detections);
-  draw_boxes(detections, imgPath,model.input_width, model.input_height);
+  // draw_boxes(detections, imgPath,model.input_width, model.input_height);
 
   std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
   std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
