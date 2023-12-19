@@ -1,0 +1,121 @@
+/home/dev/.local/lib/python3.6/site-packages/torch/share/cmake
+Running code for YOLO with path /home/dev/models/recipe_hub/yolov8/aarch64_cuda_xavier_jp4
+-- CMAKE_RUNTIME_OUTPUT_DIRECTORY="/home/dev/src/example-applications/detectors/cpp_inference/build/bin"
+-- LRE_SOURCES="/home/dev/src/example-applications/detectors/cpp_inference/src/processors.cpp"
+-- OpenCV_INCLUDE_DIRS="/usr/include/opencv4"
+-- TVM_RUNTIME_LIB="/usr/lib/liblre.so"
+-- Caffe2: CUDA detected: 10.2
+-- Caffe2: CUDA nvcc is: /usr/local/cuda/bin/nvcc
+-- Caffe2: CUDA toolkit directory: /usr/local/cuda
+-- Caffe2: Header version is: 10.2
+-- Found cuDNN: v8.2.1  (include: /usr/include, library: /usr/lib/aarch64-linux-gnu/libcudnn.so)
+-- /usr/local/cuda/lib64/libnvrtc.so shorthash is 7d272a04
+-- Autodetected CUDA architecture(s):  7.2
+-- Added CUDA NVCC flags for: -gencode;arch=compute_72,code=sm_72
+-- Configuring done (1.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/dev/src/example-applications/detectors/cpp_inference/build
+/snap/cmake/1362/bin/cmake -S/home/dev/src/example-applications/detectors/cpp_inference -B/home/dev/src/example-applications/detectors/cpp_inference/build --check-build-system CMakeFiles/Makefile.cmake 0
+/snap/cmake/1362/bin/cmake -E cmake_progress_start /home/dev/src/example-applications/detectors/cpp_inference/build/CMakeFiles /home/dev/src/example-applications/detectors/cpp_inference/build//CMakeFiles/progress.marks
+make  -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/dev/src/example-applications/detectors/cpp_inference/build'
+make  -f CMakeFiles/application.dir/build.make CMakeFiles/application.dir/depend
+make[2]: Entering directory '/home/dev/src/example-applications/detectors/cpp_inference/build'
+cd /home/dev/src/example-applications/detectors/cpp_inference/build && /snap/cmake/1362/bin/cmake -E cmake_depends "Unix Makefiles" /home/dev/src/example-applications/detectors/cpp_inference /home/dev/src/example-applications/detectors/cpp_inference /home/dev/src/example-applications/detectors/cpp_inference/build /home/dev/src/example-applications/detectors/cpp_inference/build /home/dev/src/example-applications/detectors/cpp_inference/build/CMakeFiles/application.dir/DependInfo.cmake "--color="
+make[2]: Leaving directory '/home/dev/src/example-applications/detectors/cpp_inference/build'
+make  -f CMakeFiles/application.dir/build.make CMakeFiles/application.dir/build
+make[2]: Entering directory '/home/dev/src/example-applications/detectors/cpp_inference/build'
+[ 33%] Building CXX object CMakeFiles/application.dir/application.cpp.o
+/usr/bin/c++ -DUSE_C10D_GLOO -DUSE_C10D_MPI -DUSE_DISTRIBUTED -DUSE_RPC -DUSE_TENSORPIPE -I/home/dev/src/example-applications/detectors/cpp_inference/include -I/home/dev/src/example-applications/detectors/cpp_inference/../../utils -I/home/dev/src/example-applications/detectors/cpp_inference/build/_deps/dmlccore-src/include -I/home/dev/src/example-applications/detectors/cpp_inference/build/_deps/dlpack-src/include -isystem /usr/include/opencv4 -isystem /home/dev/.local/lib/python3.6/site-packages/torch/include -isystem /home/dev/.local/lib/python3.6/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -std=c++1z -O3 -fPIC -D_GLIBCXX_USE_CXX11_ABI=1 -MD -MT CMakeFiles/application.dir/application.cpp.o -MF CMakeFiles/application.dir/application.cpp.o.d -o CMakeFiles/application.dir/application.cpp.o -c /home/dev/src/example-applications/detectors/cpp_inference/application.cpp
+[ 66%] Building CXX object CMakeFiles/application.dir/src/processors.cpp.o
+/usr/bin/c++ -DUSE_C10D_GLOO -DUSE_C10D_MPI -DUSE_DISTRIBUTED -DUSE_RPC -DUSE_TENSORPIPE -I/home/dev/src/example-applications/detectors/cpp_inference/include -I/home/dev/src/example-applications/detectors/cpp_inference/../../utils -I/home/dev/src/example-applications/detectors/cpp_inference/build/_deps/dmlccore-src/include -I/home/dev/src/example-applications/detectors/cpp_inference/build/_deps/dlpack-src/include -isystem /usr/include/opencv4 -isystem /home/dev/.local/lib/python3.6/site-packages/torch/include -isystem /home/dev/.local/lib/python3.6/site-packages/torch/include/torch/csrc/api/include -isystem /usr/local/cuda/include -std=c++1z -O3 -fPIC -D_GLIBCXX_USE_CXX11_ABI=1 -MD -MT CMakeFiles/application.dir/src/processors.cpp.o -MF CMakeFiles/application.dir/src/processors.cpp.o.d -o CMakeFiles/application.dir/src/processors.cpp.o -c /home/dev/src/example-applications/detectors/cpp_inference/src/processors.cpp
+[100%] Linking CXX executable bin/application
+/snap/cmake/1362/bin/cmake -E cmake_link_script CMakeFiles/application.dir/link.txt --verbose=1
+/usr/bin/c++ CMakeFiles/application.dir/application.cpp.o CMakeFiles/application.dir/src/processors.cpp.o -o bin/application  -Wl,-rpath,/home/dev/.local/lib/python3.6/site-packages/torch/lib:/usr/local/cuda/lib64/stubs:/usr/local/cuda/lib64 /usr/lib/liblre.so /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_gapi.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_ml.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_objdetect.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.1.1 /home/dev/.local/lib/python3.6/site-packages/torch/lib/libtorch.so /home/dev/.local/lib/python3.6/site-packages/torch/lib/libc10.so /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libnvrtc.so /usr/local/cuda/lib64/libnvToolsExt.so /usr/local/cuda/lib64/libcudart.so /home/dev/.local/lib/python3.6/site-packages/torch/lib/libc10_cuda.so -ltorchvision -lstdc++fs /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1.1 -Wl,--no-as-needed,"/home/dev/.local/lib/python3.6/site-packages/torch/lib/libtorch_cpu.so" -Wl,--as-needed -lpthread -Wl,--no-as-needed,"/home/dev/.local/lib/python3.6/site-packages/torch/lib/libtorch_cuda.so" -Wl,--as-needed /home/dev/.local/lib/python3.6/site-packages/torch/lib/libc10_cuda.so /home/dev/.local/lib/python3.6/site-packages/torch/lib/libc10.so /usr/local/cuda/lib64/libcudart.so /usr/local/cuda/lib64/libnvToolsExt.so /usr/local/cuda/lib64/libcufft.so /usr/local/cuda/lib64/libcurand.so /usr/local/cuda/lib64/libcublas.so /usr/lib/aarch64-linux-gnu/libcudnn.so -Wl,--no-as-needed,"/home/dev/.local/lib/python3.6/site-packages/torch/lib/libtorch.so" -Wl,--as-needed 
+make[2]: Leaving directory '/home/dev/src/example-applications/detectors/cpp_inference/build'
+[100%] Built target application
+make[1]: Leaving directory '/home/dev/src/example-applications/detectors/cpp_inference/build'
+/snap/cmake/1362/bin/cmake -E cmake_progress_start /home/dev/src/example-applications/detectors/cpp_inference/build/CMakeFiles 0
+----------------------------------------
+Unique ID:
+ 42f4c3f9-5efd-4068-baf1-570f6a43ed21
+----------------------------------------
+Creation Date:
+2023-12-06 19:10:47.258828
+----------------------------------------
+Device:
+    DLDeviceType::kDLCUDA
+----------------------------------------
+Precision: 
+float32     
+----------------------------------------
+Input Shapes: 
+[(1, 3, 640, 640)]
+----------------------------------------
+Output Shapes: 
+[(1, 8400, 84)]
+----------------------------------------
+SDK version: 
+3.0.0       
+----------------------------------------
+is TRT: 
+   1           
+----------------------------------------
+-----------------------------------------------------------
+                     Box                   Score     Class
+-----------------------------------------------------------
+ 109.8224  236.0326  225.5856  535.3214    0.9127    0.0000
+ 100.2397  136.0050  557.6320  440.7662    0.9062    5.0000
+ 475.2509  232.4874  559.5785  521.4877    0.8916    0.0000
+ 212.1660  241.5190  286.1215  508.8235    0.8561    0.0000
+  80.4001  326.4316  123.8777  516.7570    0.6207    0.0000
+[ CUDAFloatType{5,6} ]
+-----------------------------------------------------------
+Writing annotated image to ../../sample_images/bus_December_15_2023_07:49:46_out.jpg
+Average Preprocessing Time: 4.30568 ms
+Average Inference Time: 37.9828 ms
+Average Output Data Manipulation Time: 0.972318 ms
+Average NMS Time: 25.6074 ms
+Average Postprocessing Time: 27.4435 ms
+Running model as FP16
+----------------------------------------
+Unique ID:
+ 42f4c3f9-5efd-4068-baf1-570f6a43ed21
+----------------------------------------
+Creation Date:
+2023-12-06 19:10:47.258828
+----------------------------------------
+Device:
+    DLDeviceType::kDLCUDA
+----------------------------------------
+Precision: 
+float32     
+----------------------------------------
+Input Shapes: 
+[(1, 3, 640, 640)]
+----------------------------------------
+Output Shapes: 
+[(1, 8400, 84)]
+----------------------------------------
+SDK version: 
+3.0.0       
+----------------------------------------
+is TRT: 
+   1           
+----------------------------------------
+-----------------------------------------------------------
+                     Box                   Score     Class
+-----------------------------------------------------------
+ 109.8224  236.0326  225.5856  535.3214    0.9127    0.0000
+ 100.2397  136.0050  557.6320  440.7662    0.9062    5.0000
+ 475.2509  232.4874  559.5785  521.4877    0.8916    0.0000
+ 212.1660  241.5190  286.1215  508.8235    0.8561    0.0000
+  80.4001  326.4316  123.8777  516.7570    0.6207    0.0000
+[ CUDAFloatType{5,6} ]
+-----------------------------------------------------------
+Writing annotated image to ../../sample_images/bus_December_15_2023_07:52:26_out.jpg
+Average Preprocessing Time: 4.54866 ms
+Average Inference Time: 42.7964 ms
+Average Output Data Manipulation Time: 0.923487 ms
+Average NMS Time: 21.2229 ms
+Average Postprocessing Time: 23.2067 ms

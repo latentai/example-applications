@@ -19,6 +19,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-O3 -fPIC)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
 # -------------------------------------------------------------------------------------------
 # Output Directories
 # -------------------------------------------------------------------------------------------
@@ -43,6 +44,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../utils)
 # OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
+cmake_print_variables(OpenCV_INCLUDE_DIRS)
 
 ## TVM Runtime
 find_library(TVM_RUNTIME_LIB REQUIRED
@@ -56,20 +58,27 @@ include_directories(/usr/include/)
 
 include(FetchContent) # once in the project to include the module
 FetchContent_Declare(dmlccore
-  GIT_REPOSITORY https://github.com/dmlc/dmlc-core.git
-  GIT_TAG 09511cf9fe5ff103900a5eafb50870dc84cc17c8)
+                     GIT_REPOSITORY https://github.com/dmlc/dmlc-core.git
+                     GIT_TAG 09511cf9fe5ff103900a5eafb50870dc84cc17c8)
 if(NOT dmlccore_POPULATED)
   FetchContent_Populate(dmlccore)
 endif()
 include_directories(${dmlccore_SOURCE_DIR}/include)
 
 FetchContent_Declare(dlpack
-  GIT_REPOSITORY https://github.com/dmlc/dlpack.git
-  GIT_TAG e2bdd3bee8cb6501558042633fa59144cc8b7f5f)
+                     GIT_REPOSITORY https://github.com/dmlc/dlpack.git
+                     GIT_TAG e2bdd3bee8cb6501558042633fa59144cc8b7f5f)
 if(NOT dlpack_POPULATED)
   FetchContent_Populate(dlpack)
 endif()
 include_directories(${dlpack_SOURCE_DIR}/include)
+
+#TORCH
+find_package(Torch REQUIRED)
+include_directories(${TORCH_INCLUDE_DIRS})
+
+find_package(TorchVision REQUIRED)
+
 
 # -------------------------------------------------------------------------------------------
 # Links to target
@@ -77,6 +86,8 @@ include_directories(${dlpack_SOURCE_DIR}/include)
 target_link_libraries(
   ${PROJECT_NAME}
   ${TVM_RUNTIME_LIB}
-  ${OpenCV_LIBS}
-  
+  ${OpenCV_LIBS} 
+  ${TORCH_LIBRARIES}
+  torchvision
+  -lstdc++fs
 )
