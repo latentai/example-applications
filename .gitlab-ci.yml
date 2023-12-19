@@ -1,0 +1,49 @@
+workflow:
+  name: Example Applications Device Tests
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: always
+
+variables:
+  TARGET_REGISTRY: registry.gitlab.com
+  IMAGE_TAG: $TARGET_REGISTRY/latentai/example_applications/tests:x86_64-cuda
+  DOCKER_TLS_CERTDIR: "/certs"
+  FF_NETWORK_PER_BUILD: 1
+
+build_x86_64-cuda:
+  tags:
+    - saas-linux-medium-amd64-gpu-standard
+  rules:
+    - if: $CI_COMMIT_MESSAGE !~ /^\[skip\-build\].*/im
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - cat $REGISTRY_TOKEN | docker login $TARGET_REGISTRY -u __token__ --password-stdin
+  script:
+    - docker build -t $IMAGE_TAG
+                   -f Dockerfile.x86_64-cuda
+                  --push
+                  --build-arg ARMORED_PUBLIC_KEY .
+  after_script:
+    - docker logout $TARGET_REGISTRY
+
+test_classifier:
+  stage: test
+  image: $IMAGE_TAG
+  tags:
+    - saas-linux-medium-amd64-gpu-standard
+  script:
+    - apt-get install -y --no-install-recommends liblre-cuda11 liblre-dev libopencv-dev
+    - cd classifiers/cpp_inference
+    - mkdir build &&
+      cd build &&
+      cmake .. &&
+      make -j$(nproc)
+    - echo CI_BUILDS_DIR -- $CI_BUILDS_DIR
+    - /builds/latentai/example_applications/classifiers/cpp_inference/build/bin/application
+          /builds/latentai/example_applications/models/mobilenetv2_float32/modelLibrary.so
+          10
+          /builds/latentai/example_applications/sample_images/penguin.jpg
+          /builds/latentai/example_applications/labels/class_names_10.txt

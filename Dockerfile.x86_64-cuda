@@ -1,0 +1,19 @@
+FROM nvcr.io/nvidia/tensorrt:23.03-py3
+#FROM nvcr.io/nvidia/cuda:12.3.1-devel-ubuntu22.04
+#ARG DEBIAN_FRONTEND=noninteractive
+#RUN apt-get update && \
+#    apt-get install -y python3.10 cmake make git && \
+#    ln -s /usr/bin/python3.10 /usr/bin/python3
+ARG ARMORED_PUBLIC_KEY
+RUN mkdir -p /etc/apt/keyrings && \
+    echo "$ARMORED_PUBLIC_KEY" | gpg --dearmor -o /etc/apt/keyrings/latentai.gpg
+
+ARG APT_HOST=apt-dev.latentai.io
+ARG APT_BRANCH=latentai-production-2.0
+ARG APT_DIST=unstable
+ARG APT_COMPONENTS=main
+RUN echo deb [signed-by=/etc/apt/keyrings/latentai.gpg] https://$APT_HOST/$APT_BRANCH $APT_DIST $APT_COMPONENTS > \
+         /etc/apt/sources.list.d/latentai-stable.list && \
+    apt-get update
+#COPY . /latentai
+#WORKDIR /latentai

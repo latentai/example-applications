@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 
   std::string path_to_model = params.model_binary_path;
   int iterations = params.iterations;
-  std::string img_path = params.img_path;
+  std::string img_path = params.input_image_path;
   std::string label_file_name = params.label_file_path;
 
 
@@ -68,7 +68,3 @@ int main(int argc, char *argv[]) {
   std::cout << "Average Postprocessing Time: " << t_postprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
 
 }
-
-
-
-  
