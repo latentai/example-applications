@@ -64,7 +64,7 @@ def main():
 
     # Set precision
     use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
-    if(use_fp16):
+    if use_fp16:
         lre.set_model_precision("float16")
 
     # Read metadata from runtime
