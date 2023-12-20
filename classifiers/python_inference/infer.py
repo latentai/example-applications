@@ -49,8 +49,7 @@ def main():
     device = lre.device_type
 
     # Load image
-    input_image_path = args.input_image_path
-    image = Image.open(input_image_path)
+    image = Image.open(args.input_image_path)
     
     # Apply preprocess transformations
     resize_transform = transforms.Resize(input_size)
