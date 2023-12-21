@@ -12,10 +12,7 @@ In this public repository, the example applications (in both c++ and python) for
 Specific instructions can be found under:
 
 - Classifiers     [C++](classifiers/cpp_inference/README.md) | [python](classifiers/python_inference/README.md)
-- Detectors
-    - YoloV5           [C++](detectors/yolov5/cpp_inference/README.md) |  [C++ no torchvision](detectors/yolov5/cpp_inference_no_torchvision/README.md) | [python](detectors/yolov5/python_inference/README.md)
-    - MobilenetSSD     [C++](detectors/mobilenet_ssd/cpp_inference/README.md) | [python](detectors/mobilenet_ssd/python_inference/README.md)
-    - EfficientDet     [C++](detectors/efficientdet/cpp_inference/README.md) | [C++ no torchvision](detectors/efficientdet/cpp_inference_no_torchvision/README.md) | [python](detectors/efficientdet/python_inference/README.md)
+- Detectors      [C++](detectors/cpp_inference/README.md) | [ C++ no torchvision](detectors/cpp_inference_no_torchvision/README.md) | [python](detectors/python_inference/README.md)
 
 To run the application, there are bash files to be run inside of each inference example folder.
 For those scripts to work, replace the model path in the scripts or be sure to have saved the model in the same location.
