@@ -6,9 +6,9 @@ The following are the recommended steps to using these install scripts:
 1. Start with a fresh install of the OS on your Raspberry Pi.  We have tested these scripts and applications with *Raspberry Pi 64-bit OS*
 2. Add the Latent AI apt server:<br>
 `wget -qO - https://public.latentai.io/add_apt_repository | sudo bash`
-3. Run the Latent AI LOR dependency install script:<br>
+3. Run the LOR dependency install script:<br>
 `install-lor-deps.sh`
-4. Copy the appropriate LOR server from the LEIP SDK `/latentai/packages/` directory to the target device.  The Python3.8 version of the LOR works with the default Python3.9 provided by the OS.
+4. Copy the appropriate LOR server from the LEIP Compiler Framework `/latentai/packages/` directory to the target device.  The Python3.8 version of the LOR works with the default Python3.9 provided by the OS.
 5. Install the LOR using:<br>
 `pip3 install <LOR.whl file>`
 7. Install the additional dependencies for the example applications using:<br>

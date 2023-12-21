@@ -1,8 +1,8 @@
-# Example Application - Dependency Install Scripts LEIP SDK
-The LEIP SDK comes pre-installed with all the dependencies that you will need to run the LOR in the container.
+# Example Application - Dependency Install Scripts LEIP Compiler Framework
+The LEIP Compiler Framework comes pre-installed with all the dependencies that you will need to run the LOR in the container.
 
 
-If you would like to run the example applications in this repo within the LEIP SDK, you will need to install
+If you would like to run the example applications in this repo within the LEIP Compiler Framework, you will need to install
 some additional dependencies such as `torch` and `torchvision`.  This directory includes a script to install those dependencies
 and can be run using the following:
 
@@ -14,7 +14,7 @@ and can be run using the following:
 
 
 ## Customizing this process
-If you wish to install the example_applications on an x86_64 machine outside of the LEIP SDK environment, you may
+If you wish to install the example_applications on an x86_64 machine outside of the LEIP Compiler Framework environment, you may
 need to install additional dependencies.
 
 Your dependencies will vary. In a deployment scenario, your dependency list will likely be much shorter,

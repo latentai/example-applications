@@ -30,7 +30,7 @@ To assist you in setting up your edge device to work with these examples, we hav
 
 - [Xavier AGX/NX](setup_scripts/agx_nx) (Jetpack 4.6.x and 5.0)
 - [Raspberry Pi](setup_scripts/rpi) (64-bit Raspberry Pi OS)
-- [LEIP SDK](setup_scripts/x86_cuda) (For use inside the LEIP SDK)
+- [LEIP Compiler Framework](setup_scripts/x86_cuda) (For use inside the LEIP Compiler Framework)
 
 For specific instructions on installing the dependencies, see the `README.md` files in the script directories.
 
