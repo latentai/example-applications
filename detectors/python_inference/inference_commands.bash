@@ -7,13 +7,13 @@
 
 #!/bin/bash
 
-FLOAT32_MODEL=/home/dev/models/recipe_hub/ssdn/aarch64_cuda_xavier_jp4/Float32-compile
-# INT8_MODEL=$2
-LABELS_PATH=/home/dev/src/example-applications/labels/pascal_voc.txt
-MODEL_FORMAT=ssd
-MAX_DET=5
-CONF_THRESHOLD=0.3
-IOU_THRESHOLD=0.3
+FLOAT32_MODEL=$1
+INT8_MODEL=$2
+LABELS_PATH=$3
+MODEL_FORMAT=$4
+MAX_DET=$5
+CONF_THRESHOLD=$6
+IOU_THRESHOLD=$7
 
 IMAGE_PATH=../../sample_images/bus.jpg
 
@@ -22,7 +22,7 @@ then
     FLOAT32_MODEL=$MODEL_PATH/Float32-compile
     INT8_MODEL=$MODEL_PATH/Int8-optimize
 fi
-INT8_ACTIVATIONS=$INT8_MODEL/.activations/ # can we throw an error if this does not exist?
+INT8_ACTIVATIONS=$INT8_MODEL/.activations/
 
 echo "FP32..."
 mkdir -p $FLOAT32_MODEL/trt-cache
