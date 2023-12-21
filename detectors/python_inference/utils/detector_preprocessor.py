@@ -69,18 +69,6 @@ def torch_preprocess_transforms(image, input_transform, input_size):
 
 
 def preprocess(image, input_transform, input_size):
-    """
-    Args
-        image: PIL image.
-        input_transform: By default, efficientdet preprocess transforms are applied.
-        Any other recipe requires setting appropriate input_transform and
-        any new model requires writing custom transforms to match af_preprocess.json.
-        input_size: Input (height, width) expected by the model.
-    Returns
-        sized_image: Input PIL image with resizing and padding for visualization.
-        transformed_image: Torch tensor to feed into the model.
-    """
-    
     # Redirect to a relevant transform library.
     sized_image, transformed_image = torch_preprocess_transforms(image, input_transform, input_size)
 
