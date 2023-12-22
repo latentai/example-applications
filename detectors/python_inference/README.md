@@ -6,19 +6,28 @@ This folder contains a python script that employs the LRE model to run an infere
 2. Install the LatentAI runtime engine (`pylre`) by `sudo apt install pylre` in the device.
 3. Send the arguments
 ```
-FLOAT32_MODEL   => path to model compiled for FP32
-INT8_MODEL      => path to model optimized for INT8
-LABELS_PATH     => path to labels
-MODEL_FORMAT    => type of detector (YOLO, MOBNETSSD, EFFICIENTDET, NANODET)
-MAX_DET         => maximum detections per image
-CONF_THRESHOLD  => confidence treshold (e.g 0.3)
-IOU_THRESHOLD   => iou treshold (e.g. 0.4)
+model_binary_path => path to compiled model binary
+input_image_path  => path to input image
+labels            => path to labels
+model_format      => type of detector (efficientdet, ssd, yolo, nanodet)
+max_det           => maximum detections per image
+confidence        => confidence treshold (e.g 0.3)
+iou               => iou treshold (e.g. 0.4)
 ```
-, in that order to run [script](inference_commands.bash) `bash inference_commands.bash`. 
+to run [script](infer.py) `python3 infer.py`. 
 
 <br>
-For example:
+For example, the inference command for Float32 would be:
 
 ```
-bash inference_commands.bash ~/models/ssdn/x86_64_cuda/Float32-compile ~//models/ssdn/x86_64_cuda/Int8-optimize ../../labels/pascal_voc.txt MOBNETSSD 5 0.3 0.45
+python3 infer.py \
+  --model_binary_path <path to model>/Float32-compiled/modelLibrary.so \
+  --input_image_path../../sample_images/penguin.jpg \
+  --labels ../../labels/class_names_10.txt
+  --model_format <model format: efficientdet/ssd/yolo/nanodet> 
+  --max_det <integer of max detections> 
+  --confidence <float of confidence threshold >
+  --iou <float of IOU threshold>
 ```
+
+There is a helpful [script](inference_commands.bash) to run all compiled artifacts from a leip pipeline.
