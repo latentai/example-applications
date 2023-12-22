@@ -7,8 +7,12 @@ This folder contains a python script that employs the LRE model to run an infere
 3. Send the `FLOAT32_MODEL`, `INT8_MODEL` and `LABELS_PATH`, in that order to run [script](inference_commands.bash) `bash inference_commands.bash`. 
 
 <br>
-For example:
+For example, the inference command for Float32 would be:
 
 ```
-bash inference_commands.bash ~/models/timm-gernet_m/x86_64_cuda/Float32-compile ~/models/timm-gernet_m/x86_64_cuda/Int8-optimize ../../sample_images/apple.jpg
+python3 infer.py \
+  <path to model>/Float32-compiled/modelLibrary.so \
+  10 \
+  ../../sample_images/penguin.jpg \
+  ../../labels/class_names_10.txt
 ```

@@ -46,11 +46,11 @@ image to be evaluated        - ../../sample_images/penguin.jpg\n
 label names input            - ../../labels/class_names_10.txt\n
 ```
 <br>
-The inference command for Float32 would be:
+For example, the inference command for Float32 would be:
 
 ```
 ./bin/application \
-  <path to>/model/Float32-compiled/modelLibrary.so \
+  <path to model>/Float32-compiled/modelLibrary.so \
   10 \
   ../../sample_images/penguin.jpg \
   ../../labels/class_names_10.txt
