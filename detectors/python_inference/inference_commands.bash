@@ -19,6 +19,7 @@ IMAGE_PATH=../../sample_images/bus.jpg
 
 if [ -v MODEL_PATH ];
 then
+    echo "Models to be run from" $MODEL_PATH
     FLOAT32_MODEL=$MODEL_PATH/Float32-compile
     INT8_MODEL=$MODEL_PATH/Int8-optimize
 fi

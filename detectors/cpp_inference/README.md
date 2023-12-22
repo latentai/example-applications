@@ -12,7 +12,7 @@ See the provided `inference_commands.bash` script.  This can be used as an examp
 1. Install the device dependencies.  [Use the appropriate scripts for your device](../../setup_scripts)
 2. Copy the modelLibrary.so to the device.
 3. Edit the `inference_commands.bash` script to set `FLOAT32_MODEL` and `INT8_MODEL` variables to reflect your model paths. Specify the detector for pre and post processing setup. Supported are: YOLO, MOBNETSSD, EFFICIENTDET, NANODET
-4. run `bash inference_commands.bash`
+4. run `bash inference_commands.bash` after setting appropriate paths and variables in it.
 
 If you are only targeting C++, you may not wish to install everything in those setup scripts, but you may wish to use them for reference.
 The critical dependencies for the C++ examples are listed below.
@@ -46,7 +46,7 @@ number of iterations         - 10
 image to be evaluated        - ../../sample_images/penguin.jpg\n
 ```
 <br>
-The inference command for Float32 would be:
+For example, the inference command for Float32 would be:
 
 ```
 ./bin/application \
