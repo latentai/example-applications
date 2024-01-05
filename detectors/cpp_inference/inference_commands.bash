@@ -29,8 +29,6 @@ else
 fi
 echo $TORCH_PATH
 
-sed -i "s/constexpr const char\* MODEL = .*/constexpr const char* MODEL = \"$model\";/" include/processors.hpp
-
 # Compile
 mkdir build
 cd build
@@ -40,12 +38,12 @@ cd ..
 
 echo "FP32..."
 mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 $IMAGE_PATH
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 $IMAGE_PATH $model
 
 echo "FP16..."
 mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 $IMAGE_PATH
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 $IMAGE_PATH $model
 
 echo "INT8..."
 mkdir -p $INT8_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_ACTIVATIONS ./build/bin/application $INT8_MODEL/modelLibrary.so 10 $IMAGE_PATH
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_ACTIVATIONS ./build/bin/application $INT8_MODEL/modelLibrary.so 10 $IMAGE_PATH $model
