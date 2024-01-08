@@ -10,6 +10,7 @@ if [ ! -f /etc/apt/sources.list.d/latentai-stable.list ]; then
 fi
 
 sudo apt update
+sudo apt install pylre
 sudo apt install -y cmake
 sudo apt install -y libopencv-dev
 sudo apt install -y liblre-cpu liblre-dev

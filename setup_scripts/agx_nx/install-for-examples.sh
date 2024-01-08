@@ -22,6 +22,8 @@ fi
 
 sudo apt update
 
+sudo apt install pylre
+
 sudo apt install -y libopencv-dev
 sudo apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
 sudo apt install -y liblre-cuda liblre-dev
