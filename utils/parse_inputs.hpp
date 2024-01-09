@@ -59,10 +59,11 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
 
         std::vector<std::string> supported_models = {"YOLO", "NANODET", "EFFICIENTDET","MOBNETSSD"};
         
-        params.model_name = argv[4];
-        if (std::find(supported_models.begin(), supported_models.end(), "params.model_type") == supported_models.end()) {
+        params.model_family = argv[4];
+        if (std::find(supported_models.begin(), supported_models.end(), params.model_family) == supported_models.end()) {
         // Element not found
             std::cerr << "Invalid model type, supported: YOLO, MOBNETSSD, EFFICIENTDET, NANODET\n";
+            return false;
         }
     }
 
