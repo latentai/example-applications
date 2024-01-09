@@ -10,7 +10,8 @@
 MODEL_PATH=<path to compiled artifacts>
 IMAGE_PATH=../../sample_images/bus.jpg
 
-model=MOBNETSSD # Detector architecture  supported YOLO, MOBNETSSD, EFFICIENTDET, NANODET
+ITERATIONS=10
+MODEL_FAMILY=YOLO # supported detectors: YOLO, MOBNETSSD, EFFICIENTDET, NANODET
 
 if [ -v MODEL_PATH ];
 then
@@ -38,12 +39,12 @@ cd ..
 
 echo "FP32..."
 mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 $IMAGE_PATH $model
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so $ITERATIONS $IMAGE_PATH $MODEL_FAMILY
 
 echo "FP16..."
 mkdir -p $FLOAT32_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 $IMAGE_PATH $model
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so $ITERATIONS $IMAGE_PATH $MODEL_FAMILY
 
 echo "INT8..."
 mkdir -p $INT8_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_ACTIVATIONS ./build/bin/application $INT8_MODEL/modelLibrary.so 10 $IMAGE_PATH $model
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_ACTIVATIONS ./build/bin/application $INT8_MODEL/modelLibrary.so $ITERATIONS $IMAGE_PATH $MODEL_FAMILY

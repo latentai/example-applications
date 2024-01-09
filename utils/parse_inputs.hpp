@@ -3,7 +3,7 @@ struct InputParams {
     int iterations;
     std::string input_image_path;
     std::string label_file_path;
-    std::string model_name;
+    std::string model_family;
 };
 
 enum class InputType {

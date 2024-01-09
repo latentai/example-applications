@@ -7,10 +7,10 @@
 
 #!/bin/bash
 
-ARCH=aarch64
-MODEL_PATH=/home/pi/models/recipe_hub/yolov5n/$ARCH
+MODEL_PATH=<path to compiled artifacts>
 
-model=YOLO # Detector architecture  supported YOLO, MOBNETSSD, EFFICIENTDET, NANODET
+ITERATIONS=10
+MODEL_FAMILY=YOLO # supported detectors: YOLO, MOBNETSSD, EFFICIENTDET, NANODET
 
 if [ -v MODEL_PATH ];
 then
@@ -44,14 +44,14 @@ cmake -DCMAKE_PREFIX_PATH=$TORCH_PATH ..
 make -j 8
 cd ..
 
-# # FP32
-# mkdir -p $FLOAT32_MODEL/trt-cache/
-# TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+# FP32
+mkdir -p $FLOAT32_MODEL/trt-cache/
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ ./build/bin/application $FLOAT32_MODEL/modelLibrary.so $ITERATIONS ../../sample_images/bus.jpg $MODEL_FAMILY
 
-# # FP16
-# mkdir -p $FLOAT32_MODEL/trt-cache/
-# TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+# FP16
+mkdir -p $FLOAT32_MODEL/trt-cache/
+TVM_TENSORRT_CACHE_DIR=$FLOAT32_MODEL/trt-cache/ TVM_TENSORRT_USE_FP16=1 ./build/bin/application $FLOAT32_MODEL/modelLibrary.so $ITERATIONS ../../sample_images/bus.jpg $MODEL_FAMILY
 
 # INT8
 mkdir -p $INT8_MODEL/trt-cache/
-TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so 10 ../../sample_images/bus.jpg
+TVM_TENSORRT_CACHE_DIR=$INT8_MODEL/trt-cache/ TVM_TENSORRT_USE_INT8=1 TRT_INT8_PATH=$INT8_MODEL/.activations/ ./build/bin/application $INT8_MODEL/modelLibrary.so $ITERATIONS ../../sample_images/bus.jpg $MODEL_FAMILY

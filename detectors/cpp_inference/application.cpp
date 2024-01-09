@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   std::string model_binary = params.model_binary_path;
   int iterations = params.iterations;
   std::string input_image_string = params.input_image_path;
-  std::string model_name = params.model_name;
+  std::string model_family = params.model_family;
 
   at::Tensor detections{};
   bool use_fp16 = std::getenv("TVM_TENSORRT_USE_FP16") ? std::stoi(std::getenv("TVM_TENSORRT_USE_FP16")) != 0 : false;
@@ -53,13 +53,13 @@ int main(int argc, char *argv[]) {
 
     // Preprocessing
     t_preprocessing.start();
-    if(model_name=="NANODET" || model_name=="EFFICIENTDET" || model_name=="MOBNETSSD")
+    if(model_family=="NANODET" || model_family=="EFFICIENTDET" || model_family=="MOBNETSSD")
     {
      auto resized_image = ResizeImage(imageInput, lre.input_width, lre.input_height);
      processed_image = preprocess_efficientdet(resized_image);
     }
     else {
-      if (model_name=="YOLO")
+      if (model_family=="YOLO")
       {
         cv::Scalar background(124, 116, 104);
         auto resized_and_centered_image = resizeAndCenterImage(imageInput, cv::Size(lre.input_width,lre.input_height), background);
@@ -83,15 +83,15 @@ int main(int argc, char *argv[]) {
     // Convert DLTensor to at::Tensor
     auto outputs = convert_to_atTensor(lre.getOutputs()[0]);
     std::map<std::string, at::Tensor> tensors_{};
-    if (model_name=="EFFICIENTDET"){
+    if (model_family=="EFFICIENTDET"){
      tensors_ = effdet_tensors(outputs[0]);
     } 
     else{
-      if (model_name=="NANODET" || model_name=="YOLO"){
+      if (model_family=="NANODET" || model_family=="YOLO"){
         tensors_ = yolo_tensors(outputs[0]);
       }
       else{
-      if (model_name=="MOBNETSSD"){
+      if (model_family=="MOBNETSSD"){
         tensors_ = ssd_tensors(outputs[0], lre.input_width, lre.input_height);
         }
       else{
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 
   }
   print_detections(detections);
-  draw_boxes(detections, input_image_string,lre.input_width, lre.input_height,model_name);
+  draw_boxes(detections, input_image_string,lre.input_width, lre.input_height, model_family);
 
   std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
   std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;

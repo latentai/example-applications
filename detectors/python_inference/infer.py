@@ -30,10 +30,10 @@ def main():
         help="Path to labels text file.",
     )
     parser.add_argument(
-        "--model_format",
+        "--model_family",
         type=str,
         default="efficientdet",
-        help="Model model_format to use for pre/post processing.",
+        help="Model model_family to use for pre/post processing.",
     )
     parser.add_argument(
         "--max_det",
@@ -78,7 +78,7 @@ def main():
     labels = utils.load_labels(args.labels)
 
     # Pre-process
-    sized_image, transformed_image = detector_preprocessor.preprocess(image, args.model_format, input_size)
+    sized_image, transformed_image = detector_preprocessor.preprocess(image, args.model_family, input_size)
     print("input size: " + str(transformed_image.shape))
 
     # Run Inference
@@ -91,7 +91,7 @@ def main():
     # Post-process
     import torch as T
     output_torch = T.from_dlpack(output)   
-    output = detector_postprocessor.postprocess(output_torch, args.model_format, input_size, max_det_per_image=args.max_det, prediction_confidence_threshold=args.confidence, iou_threshold=args.iou)
+    output = detector_postprocessor.postprocess(output_torch, args.model_family, input_size, max_det_per_image=args.max_det, prediction_confidence_threshold=args.confidence, iou_threshold=args.iou)
     
     # Generate visualizations
     output_image = utils.plot_boxes(sized_image, output, labels)
