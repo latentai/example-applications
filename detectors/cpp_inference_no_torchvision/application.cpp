@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
 
   }
   print_detections(detections);
-  draw_boxes(detections, input_image_string,lre.input_width, lre.input_height);
+  draw_boxes(detections, input_image_string,lre.input_width, lre.input_height, model_family);
 
   std::cout << "Average Preprocessing Time: " << t_preprocessing.averageElapsedMilliseconds() << " ms" << std::endl;
   std::cout << "Average Inference Time: " << t_inference.averageElapsedMilliseconds() << " ms" << std::endl;
