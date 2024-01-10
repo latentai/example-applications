@@ -54,13 +54,13 @@ torch::Tensor clip_boxes_xyxy(torch::Tensor boxes, torch::Tensor size)
   return boxes;
 }
 
-void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float WIDTH, float HEIGHT)
+void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float WIDTH, float HEIGHT, std::string model_name)
 {
   cv::Mat image_out{};
   cv::Mat origImage = cv::imread(image_path);
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(WIDTH,HEIGHT);
-  if (MODEL=="YOLO"){
+  if (model_name=="YOLO"){
     image_out = resizeAndCenterImage(origImage, dstSize, background);
   }
   else{

@@ -3,6 +3,7 @@ struct InputParams {
     int iterations;
     std::string input_image_path;
     std::string label_file_path;
+    std::string model_family;
 };
 
 enum class InputType {
@@ -15,8 +16,8 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
         std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations input_image_path label_file_path\n";
         return false;
     }
-    else if (input_type == InputType::Detector && argc != 4) {
-        std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations input_image_path\n";
+    else if (input_type == InputType::Detector && argc != 5) {
+        std::cerr << "Invalid number of arguments. Usage: program_name model_binary_path iterations input_image_path model_type\n";
         return false;
     }
 
@@ -51,6 +52,17 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
         std::ifstream label_file(params.label_file_path);
         if (!label_file) {
             std::cerr << "Label file does not exist: " << params.label_file_path << std::endl;
+            return false;
+        }
+    }
+    else if(input_type == InputType::Detector) {
+
+        std::vector<std::string> supported_models = {"YOLO", "NANODET", "EFFICIENTDET","MOBNETSSD"};
+        
+        params.model_family = argv[4];
+        if (std::find(supported_models.begin(), supported_models.end(), params.model_family) == supported_models.end()) {
+        // Element not found
+            std::cerr << "Invalid model type, supported: YOLO, MOBNETSSD, EFFICIENTDET, NANODET\n";
             return false;
         }
     }

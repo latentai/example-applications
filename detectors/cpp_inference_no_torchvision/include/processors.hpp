@@ -33,7 +33,6 @@
 #define IOU_THRESHOLD 0.45
 
 // Initialize model types
-constexpr const char* MODEL = "YOLO";
 
 
 namespace fs = std::experimental::filesystem;
