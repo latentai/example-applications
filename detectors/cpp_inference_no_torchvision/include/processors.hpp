@@ -51,6 +51,6 @@ std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output);
 std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int height);
 
 
-void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height);
+void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height, std::string model_family);
 std::string date_stamp();
 void print_detections(at::Tensor detections);
