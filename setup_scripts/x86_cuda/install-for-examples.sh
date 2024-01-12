@@ -15,7 +15,7 @@ sudo apt install pylre
 
 apt install -y libopencv-dev
 apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
-apt install -y liblre-cuda liblre-dev
+apt install -y liblre-cuda11 liblre-dev
 
 OWD=$PWD
 mkdir ~/.torch-apps

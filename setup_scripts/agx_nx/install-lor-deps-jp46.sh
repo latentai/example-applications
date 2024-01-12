@@ -87,4 +87,4 @@ pip3 install pycocotools
 pip3 install --no-deps effdet==0.2.4
 
 # Installing LRE packages now required for LOR as well as examples
-sudo apt install -y liblre-cuda liblre-dev
+sudo apt install -y liblre-cuda10 liblre-dev
