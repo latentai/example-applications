@@ -20,7 +20,7 @@ need to install additional dependencies.
 Your dependencies will vary. In a deployment scenario, your dependency list will likely be much shorter,
 particularly if you are deploying with C++ applications.  At a minimum, you will require the following packages:
 
-1. `liblre-cuda` or `liblre-cpu`
+1. `liblre-cuda10` or `liblre-cuda11` or `liblre-cpu`
 2. `liblre-dev`
 3. Additional dependencies required by your preprocessing, postprocessing and application
 

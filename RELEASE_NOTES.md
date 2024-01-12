@@ -6,7 +6,7 @@
 - 2.9
    - Latent AI Runtime Environment library names and debian packages have changed.  New LRE library packages:
         - CPU Target  : **liblre-cpu**, 
-        - CUDA Target : **liblre-cuda** and 
+        - CUDA Target : **liblre-cuda10** or **liblre-cuda11** and 
         - Dev         : **liblre-dev** (containing also header files for runtime)
     - C++ Applications have been updated to be more consistent and with better performant Pre- and Post- Processing
     - Added support for Nvidia Orin series and Jetpack 5.
