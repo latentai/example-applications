@@ -26,7 +26,6 @@ sudo apt install pylre
 
 sudo apt install -y libopencv-dev
 sudo apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
-sudo apt install -y liblre-cuda11 liblre-dev
 
 pip3 install --upgrade pip
 pip3 install testresources
