@@ -79,12 +79,5 @@ fi
 pip3 install typing-extensions==3.10.0.2
 pip3 install --ignore-installed PyYAML==6.0
 
-# Only required for effdet package (efficientdet post processing dep)
-pip3 install --no-deps timm
-pip3 install huggingface-hub==0.4.0
-pip3 install omegaconf
-pip3 install pycocotools
-pip3 install --no-deps effdet==0.2.4
-
 # Installing LRE packages now required for LOR as well as examples
 sudo apt install -y liblre-cuda10 liblre-dev
