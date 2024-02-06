@@ -44,6 +44,7 @@ path to binary               - bin/application
 path to model                - modelLibrary.so
 number of iterations         - 10
 image to be evaluated        - ../../sample_images/penguin.jpg\n
+model family                 - YOLO, MOBNETSSD, EFFICIENTDET, NANODET
 ```
 <br>
 For example, the inference command for Float32 would be:
@@ -53,4 +54,5 @@ For example, the inference command for Float32 would be:
   <path to>/model/Float32-compiled/modelLibrary.so \
   10 \
   ../../sample_images/penguin.jpg \
+  YOLO
 ```

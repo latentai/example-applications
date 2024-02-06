@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   PrintModelMetadata(lre);
 
   // WarmUp Phase 
-  lre.warmUp(1);
+  lre.warmUp(100);
 
   cv::Mat processed_image{};
 
@@ -101,6 +101,18 @@ int main(int argc, char *argv[]) {
     } 
     t_op_transform.stop();
 
+    // Thresholding
+    // Thresholding can have a huge impact on NMS timing. For improved Latency provide optimal thresholding score
+    //auto filtered_scores = at::where(tensors_["scores"] > 0.01);
+
+    auto filtered_scores = at::where(tensors_["scores"] > CONFIDENCE_THRESHOLD);
+    
+    if(filtered_scores[0].size(0) > 1){
+      tensors_["boxes"] = tensors_["boxes"].index({filtered_scores[0]});
+      tensors_["classes"] = tensors_["classes"].index({filtered_scores[0]});
+      tensors_["scores"] = tensors_["scores"].index({filtered_scores[0]});
+    }
+
     // NMS from Torchvision 
     t_nms.start();
     auto result = batched_nms_coordinate_trick(tensors_["boxes"],tensors_["scores"],tensors_["classes"], IOU_THRESHOLD);
@@ -117,6 +129,7 @@ int main(int argc, char *argv[]) {
     // Confidence Threshold Filter 
     auto filtered_detections = at::where(detections.index({"...",4}) > CONFIDENCE_THRESHOLD);
     detections = detections.index({filtered_detections[0]});
+
     t_postprocessing.stop();
 
   }
