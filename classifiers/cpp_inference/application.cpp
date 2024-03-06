@@ -17,24 +17,24 @@
 Timer t_preprocessing,t_inference,t_postprocessing;
 
 int main(int argc, char *argv[]) {
-  InputParams params;
-  if (!ParseInputs(argc, argv, InputType::Classifier, params)) {
-      std::cerr << "Parsing of given command line arguments failed.\n";
-      return 1;
-  }
 
-  std::string path_to_model = params.model_binary_path;
-  int iterations = params.iterations;
-  std::string img_path = params.input_image_path;
-  std::string label_file_name = params.label_file_path;
+  auto cmdArgs = parseClassifierInput(argc, argv);
+
+  // Extract and display required arguments
+  std::string model_path = cmdArgs["--model_path"];
+  std::string img_path = cmdArgs["--img_path"];
+  int iterations = std::stoi(cmdArgs["--iterations"]);
+  std::string precision = cmdArgs["--precision"];
+  std::string label_file_name = cmdArgs["--label_file"];
 
 
   // Model Factory 
-  LRE::LatentRuntimeEngine model_runtime(path_to_model);
+  LRE::LatentRuntimeEngine model_runtime(model_path);
+  model_runtime.setModelPrecision(precision);
   PrintModelMetadata(model_runtime);
   
   // WarmUp Phase 
-  model_runtime.warmUp(1);
+  model_runtime.warmUp(100);
 
   std::pair<float, float> top_one;
   auto input_details = getLayoutDims(model_runtime.getInputLayouts(),model_runtime.getInputShapes());

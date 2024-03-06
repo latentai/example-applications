@@ -19,4 +19,4 @@ sudo apt install -y liblre-cpu liblre-dev
 # sudo apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
 
 pip3 install opencv-python
-
+pip3 install albumentations

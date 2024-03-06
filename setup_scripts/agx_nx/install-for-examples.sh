@@ -32,4 +32,4 @@ pip3 install testresources
 pip3 install scikit-build
 pip3 install opencv-python==4.5.4.60
 pip3 install gdown
-
+pip3 install albumentations

@@ -60,7 +60,7 @@ void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float
   cv::Mat origImage = cv::imread(image_path);
   cv::Scalar background(124, 116, 104);
   cv::Size dstSize(WIDTH,HEIGHT);
-  if (model_family=="YOLO"){
+  if (model_family=="YOLO" || model_family == "EFFICIENTDET"){
     image_out = resizeAndCenterImage(origImage, dstSize, background);
   }
   else{
@@ -93,6 +93,32 @@ at::Tensor convert_to_atTensor(DLTensor *dLTensor)
   return op;
 }
 
+at::Tensor indicesToTensor(const std::vector<int>& indices, const at::TensorOptions& options) {
+    at::Tensor result = at::empty({static_cast<int64_t>(indices.size())}, options);
+    for (size_t i = 0; i < indices.size(); ++i) {
+        result[i] = indices[i];
+    }
+    return result;
+}
+
+std::vector<float> tensorToScores(at::Tensor& scores) {
+    std::vector<float> scores_vec(scores.size(0));
+    std::memcpy(scores_vec.data(), scores.data_ptr<float>(), sizeof(float) * scores.size(0));
+    return scores_vec;
+}
+
+std::vector<cv::Rect> tensorToRects(const at::Tensor& boxes) {
+    std::vector<cv::Rect> rects;
+    for (int i = 0; i < boxes.size(0); ++i) {
+        int x1 = boxes[i][0].item<float>();
+        int y1 = boxes[i][1].item<float>();
+        int x2 = boxes[i][2].item<float>();
+        int y2 = boxes[i][3].item<float>();
+        rects.push_back(cv::Rect(x1, y1, x2 - x1, y2 - y1));
+    }
+    return rects;
+}
+
 at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold)
 {
   if(boxes.numel() == 0)
@@ -103,56 +129,41 @@ at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, a
   auto max_coordinate = boxes.max();
   auto offsets =  classes * (max_coordinate + at::ones({1}).to(boxes.device()));
   auto boxes_for_nms = boxes + offsets.index({at::indexing::Slice(), at::indexing::None});
-  auto result = vision::ops::nms(boxes_for_nms,scores,iou_threshold);
+  
+  #ifdef HAVE_TORCHVISION
+    auto result = vision::ops::nms(boxes_for_nms,scores,iou_threshold);
+    return result;
+  #endif
 
-  return result;
+  #ifndef HAVE_TORCHVISION
+    boxes = boxes.to(torch::kCPU);
+    scores = scores.to(torch::kCPU);
+    classes = classes.to(torch::kCPU);
+
+    auto cv_boxes = tensorToRects(boxes_for_nms);
+    auto cv_scores = tensorToScores(scores);
+    std::vector<int> indices;
+    cv::dnn::NMSBoxes(cv_boxes, cv_scores, 0.0, iou_threshold, indices);
+    
+    return indicesToTensor(indices, boxes.options());
+  #endif
+
 
 }
 
-std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output)
+
+std::map<std::string, at::Tensor> transform_tensors(at::Tensor output)
 {
-  std::map<std::string, at::Tensor> effdet_tensors_;
+  std::map<std::string, at::Tensor> transformed_tensors_;
 
-  effdet_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
-  effdet_tensors_["classes"] = output.index({at::indexing::Slice(),4});
-  effdet_tensors_["scores"] = output.index({at::indexing::Slice(),5});
-
-  return effdet_tensors_;
-}
-
-std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output)
-{
-  std::map<std::string, at::Tensor> yolo_tensors_;
-
-  yolo_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
+  transformed_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)});
 
   auto class_scores = output.index({at::indexing::Slice(),at::indexing::Slice(4,at::indexing::None)});
 
-  yolo_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(torch::kFloat32);
-  yolo_tensors_["scores"] = std::get<0>(class_scores.max(1));
+  transformed_tensors_["classes"] = std::get<1>(class_scores.max(1)).to(torch::kFloat32);
+  transformed_tensors_["scores"] = std::get<0>(class_scores.max(1));
 
-
-  return yolo_tensors_;
-}
-
-std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int height)
-{
-  std::map<std::string, at::Tensor> ssd_tensors_;
-  at::Tensor scale_tensor = at::empty(4);
-  scale_tensor = scale_tensor.to(output.device());
-
-  scale_tensor[0] = width; scale_tensor[2] = width;
-  scale_tensor[1] = height; scale_tensor[3] = height;
-
-  ssd_tensors_["boxes"] = output.index({at::indexing::Slice(),at::indexing::Slice(0,4)}) * scale_tensor;
-
-  auto class_scores = output.index({at::indexing::Slice(),at::indexing::Slice(5,at::indexing::None)});
-
-  ssd_tensors_["classes"] = std::get<1>(class_scores.max(1));
-  ssd_tensors_["scores"] = std::get<0>(class_scores.max(1));
-
-
-  return ssd_tensors_;
+  return transformed_tensors_;
 }
 
 std::string date_stamp()

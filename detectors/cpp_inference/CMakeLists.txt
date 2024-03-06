@@ -13,7 +13,6 @@ include(CMakePrintHelpers) # Helper
 # -------------------------------------------------------------------------------------------
 # Set PKG_CFLAGS
 # ---------------------------------PROJECT_NAME----------------------------------------------------------
-set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_COMPILER /usr/bin/c++)
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-O3 -fPIC)
@@ -73,21 +72,44 @@ if(NOT dlpack_POPULATED)
 endif()
 include_directories(${dlpack_SOURCE_DIR}/include)
 
+FetchContent_Declare(json 
+                    URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz
+                    DOWNLOAD_EXTRACT_TIMESTAMP true)
+FetchContent_MakeAvailable(json)
+
 #TORCH
 find_package(Torch REQUIRED)
 include_directories(${TORCH_INCLUDE_DIRS})
 
-find_package(TorchVision REQUIRED)
+# Optional find_package for TorchVision
+find_package(TorchVision QUIET)
 
+if(TorchVision_FOUND)
+  # If TorchVision is found, define a macro to indicate its availability
+  add_compile_definitions(HAVE_TORCHVISION)
+endif()
+if(NOT TorchVision_FOUND)
+  message(WARNING "TorchVision not found. Post Processing would be executed on CPU.")
+endif()
 
 # -------------------------------------------------------------------------------------------
 # Links to target
 # -------------------------------------------------------------------------------------------
-target_link_libraries(
-  ${PROJECT_NAME}
-  ${TVM_RUNTIME_LIB}
-  ${OpenCV_LIBS} 
-  ${TORCH_LIBRARIES}
-  torchvision
-  -lstdc++fs
-)
+if(TorchVision_FOUND)
+  target_link_libraries(${PROJECT_NAME}
+    ${TVM_RUNTIME_LIB}
+    ${OpenCV_LIBS}
+    ${TORCH_LIBRARIES}
+    torchvision # Only link if found
+    nlohmann_json::nlohmann_json
+    -lstdc++fs
+  )
+else()
+  target_link_libraries(${PROJECT_NAME}
+    ${TVM_RUNTIME_LIB}
+    ${OpenCV_LIBS}
+    ${TORCH_LIBRARIES}
+    nlohmann_json::nlohmann_json
+    -lstdc++fs
+  )
+endif()

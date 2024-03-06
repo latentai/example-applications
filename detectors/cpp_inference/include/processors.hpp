@@ -25,16 +25,14 @@
 #include <ATen/dlpack.h>
 #include <ATen/DLConvertor.h>
 
+#ifdef HAVE_TORCHVISION
 #include <torchvision/vision.h>
 #include <torchvision/ops/nms.h>
+#endif
 
 #include <experimental/filesystem>
 
 #include <ctime>
-
-#define CONFIDENCE_THRESHOLD 0.30 // 0.3 normally, just for nanodet 0.45
-#define IOU_THRESHOLD 0.45
-
 
 namespace fs = std::experimental::filesystem;
 
@@ -47,10 +45,7 @@ cv::Mat preprocess_yolo(cv::Mat &ImageInput);
 at::Tensor convert_to_atTensor(DLTensor* dLTensor);
 at::Tensor batched_nms_coordinate_trick(at::Tensor &boxes, at::Tensor &scores, at::Tensor &classes, float iou_threshold);
 
-std::map<std::string, at::Tensor> effdet_tensors(at::Tensor output);
-std::map<std::string, at::Tensor> yolo_tensors(at::Tensor output);
-std::map<std::string, at::Tensor> ssd_tensors(at::Tensor output, int width, int height);
-
+std::map<std::string, at::Tensor> transform_tensors(at::Tensor transform_tensors);
 
 void draw_boxes(torch::Tensor pred_boxes_x1y1x2y2, std::string image_path, float width, float height,std::string model_family);
 std::string date_stamp();

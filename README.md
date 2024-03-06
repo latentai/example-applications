@@ -2,8 +2,8 @@
 
 # Example Applications for Model Deployment
 
-[Developer Resources](https://docs.latentai.io) |
-[LEIP Recipes](https://docs.latentai.io/leip-recipes/) |
+[Developer Resources](https://leipdocs.latentai.io/) |
+[LEIP Recipes](https://github.com/latentai/leip-tutorials/blob/main/notebooks/GettingStarted.ipynb) |
 [Request a Demo](https://latentai.com/contact-us/) |
 
 Congratulations, you have a compiled model! Now it is time to deploy it in your target device.
@@ -12,7 +12,7 @@ In this public repository, the example applications (in both c++ and python) for
 Specific instructions can be found under:
 
 - Classifiers     [C++](classifiers/cpp_inference/README.md) | [python](classifiers/python_inference/README.md)
-- Detectors      [C++](detectors/cpp_inference/README.md) | [ C++ no torchvision](detectors/cpp_inference_no_torchvision/README.md) | [python](detectors/python_inference/README.md)
+- Detectors      [C++](detectors/cpp_inference/README.md) | [python](detectors/python_inference/README.md)
 
 To run the application, there are bash files to be run inside of each inference example folder.
 For those scripts to work, replace the model path in the scripts or be sure to have saved the model in the same location.

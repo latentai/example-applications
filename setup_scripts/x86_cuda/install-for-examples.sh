@@ -33,3 +33,5 @@ cmake -DCMAKE_PREFIX_PATH=~/.torch-apps/libtorch -DWITH_CUDA=ON ..
 make -j12
 make install
 ldconfig
+
+pip3 install albumentations
