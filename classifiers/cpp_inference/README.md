@@ -11,7 +11,7 @@ This folder contains a sample project for image classifier models.  This example
 
 See the provided `inference_commands.bash` script. This can be used as an example to run FP32, FP16, and INT8 versions of a model. Perform the following to use this script:
 
-1. Install the device dependencies.  [Use the appropriate scripts for your device](../../setup_scripts)
+1. Install the device dependencies.  [Use the appropriate scripts for your device.](../../setup_scripts)
 2. Copy the modelLibrary.so to the device.
 3. run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <path/of/image> --iterations <number of iterations> -label_file <path/to/labels> ```
 4. Example ``` bash inference_commands.bash --model_path /workspace/classifier/x86_64_cuda/ --img_path ../../sample_images/bus.jpg --iterations 100 --label_file ../../labels/class_names_10.txt ```
