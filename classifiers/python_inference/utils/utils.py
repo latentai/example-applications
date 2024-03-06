@@ -37,8 +37,9 @@ def set_processor_configs(albumentations_path):
 ##### Data loaders #####
 ########################
 def load_labels(path):
-    with open(path, "r") as f:
-        return f.read().strip().split("\n")
+    with open(path, 'r') as label_file:
+        lines = label_file.readlines()
+    return lines
 
 def load_image(path, config):
     if config.visualization_library_cv2:
@@ -76,69 +77,76 @@ def get_layout_dims(layout_list, shape_list):
 
 
 ########################
-##### Box plotters #####
+#### Preprocessors #####
 ########################
-def plot_one_box(box, img, color, label=None, line_thickness=None):
-    import cv2
-    # Plots one bounding box on image img
-    tl = line_thickness or round(
-        0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
+def preprocess_transforms_albumentations(image, albumentations_path):
+    # Albumentations Pre-process
+    import albumentations as A
+    albumentations_path = Path(albumentations_path) / "processors" / "af_preprocessor.json"
+    loaded_transform = A.load(albumentations_path)
+    loaded_transform.processors.pop("keypoints")
+    loaded_transform.processors.pop("bboxes")
+    # print(loaded_transform)
 
-    # list of COLORS
-    c1, c2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
-    cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
+    transformed_image = loaded_transform(image=image)['image']
+    transformed_image = transformed_image.contiguous()
 
-    if label:
-        tf = max(tl - 1, 1)  # font thickness
-        t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-        c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
-        cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
-        cv2.putText(
-            img,
-            label,
-            (c1[0], c1[1] - 2),
-            0,
-            tl / 3,
-            [225, 255, 255],
-            thickness=tf,
-            lineType=cv2.LINE_AA,
-        )
+    return transformed_image
 
-    return img
-
-
-def plot_boxes(image, output, labels):
-    import numpy as np 
-    output_image = np.array(image)
-    for bb in output:
-        for i in range(0,len(bb)):
-            box = bb[i][0:4]
-            label = labels[int(bb[i][5])]
-            output_image = plot_one_box(
-                box,
-                output_image,
-                color=(0, 0, 255),
-                label=label,
-            )
-    
-    return output_image
-
-
-def save_image(output_image, image_path, config):
-    import datetime
-    p = os.path.splitext(image_path)
-    output_filename = f"{p[0]}-{datetime.datetime.now()}{p[1]}"
-
-    if config.visualization_library_cv2:
-        import cv2
-        cv2.imwrite(output_filename, output_image)
-    else:
+def preprocess_transforms(image, input_size, config):
+    if config.preprocess_library_torch:
         import torchvision.transforms as transforms
-        pil_to_transform = transforms.ToPILImage()
-        output_image = pil_to_transform(output_image)
-        output_image.save(output_filename)
-    
-    return output_filename
+
+        # apply imagenet preprocess transformations
+        resize_transform = transforms.Resize(input_size)
+        resized_image = resize_transform(image)
+        normalize_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        return normalize_transform(resized_image)
+    else:
+        raise RuntimeError(f"Function does not exist for config.preprocess_library_torch {config.preprocess_library_torch}.")
+
+
+########################
+#### Postprocessors ####
+########################
+def postprocess_top_one(values, config):
+    if config.postprocess_library_torch:
+        import torch as T
+
+        values = T.from_dlpack(values)
+        values = T.nn.functional.softmax(values, dim=1)
+        max_index = T.argmax(values).item()
+        max_value = values[0][max_index]        
+        
+        top_one = (max_index, max_value )
+        return top_one
+    else:
+        raise RuntimeError(f"Function does not exist for config.postprocess_library_torch {config.postprocess_library_torch}.")
+
+
+########################
+###### Visualizers #####
+########################
+def print_top_one(top_one, label_file_name):
+    lines = load_labels(label_file_name)
+
+    if top_one[0] >= 0 and top_one[0] < len(lines):
+        label = lines[int(top_one[0])].strip()
+    else:
+        label = "Unknown Label"
+
+    return label, float(top_one[1])
+    # print(" ------------------------------------------------------------ ")
+    # print(" Detections ")
+    # print(" ------------------------------------------------------------ ")
+    # print(f" The image prediction result is: id {top_one[0]}")
+    # print(f" Name: {label}")
+    # print(f" Score: {top_one[1]}")
+    # print(" ------------------------------------------------------------ ")
+
 
 ########################
 #####    Timer     #####
@@ -179,4 +187,5 @@ class Timer:
 def roundToDecimalPlaces(value, decimal_places):
     factor = 10.0 ** decimal_places
     return round(value * factor) / factor
+
 

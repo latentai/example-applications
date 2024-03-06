@@ -1,3 +1,13 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <regex>
+#include <stdexcept>
+#include <unordered_map>
+#include <stdexcept>
+
+
 struct InputParams {
     std::string model_binary_path;
     int iterations;
@@ -10,6 +20,9 @@ enum class InputType {
     Classifier,
     Detector
 };
+
+std::vector<std::string> supported_models = {"YOLO", "NANODET", "EFFICIENTDET","MOBNETSSD"};
+std::vector<std::string> supported_precisions = {"float32","float16","int8"};
 
 bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& params) {
     if (input_type == InputType::Classifier && argc != 5) {
@@ -56,8 +69,6 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
         }
     }
     else if(input_type == InputType::Detector) {
-
-        std::vector<std::string> supported_models = {"YOLO", "NANODET", "EFFICIENTDET","MOBNETSSD"};
         
         params.model_family = argv[4];
         if (std::find(supported_models.begin(), supported_models.end(), params.model_family) == supported_models.end()) {
@@ -70,13 +81,149 @@ bool ParseInputs(int argc, char* argv[], InputType input_type, InputParams& para
     return true;
 }
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <regex>
-#include <stdexcept>
-#include <unordered_map>
+bool validateClassifierArguments(std::map<std::string, std::string>& cmdArgs) {
+    const std::vector<std::string> requiredArgs = {"--model_path", "--img_path", "--iterations", "--precision","--label_file"};
+    
+    for (const auto& arg : requiredArgs) {
+        auto it = cmdArgs.find(arg);
+        if (it == cmdArgs.end() || it->second.empty()) {
+            throw std::runtime_error("Required argument missing or empty: " + arg);
+        }
+    }
+
+    // Check if model_binary_path file exists
+    std::ifstream model_file(cmdArgs["--model_path"]);
+    if (!model_file) {
+        throw std::runtime_error("Model binary file does not exist: " + cmdArgs["--model_path"]);
+    }
+
+    // Check if input_image_path file exists
+    std::ifstream img_file(cmdArgs["--img_path"]);
+    if (!img_file) {
+        throw std::runtime_error("Image file does not exist: " + cmdArgs["--img_path"]);
+    }
+
+    // Check if input_image_path file exists
+    std::ifstream label_file(cmdArgs["--label_file"]);
+    if (!label_file) {
+        throw std::runtime_error("label file does not exist: " + cmdArgs["--label_file"]);
+    }
+
+
+    if (std::find(supported_precisions.begin(), supported_precisions.end(),cmdArgs["--precision"]) == supported_precisions.end()) {
+       throw std::runtime_error("Supported precisions: float32, float16 and int8 \n");
+    }
+
+    try {
+        std::stoi(cmdArgs["--iterations"]);
+    } catch (const std::exception& e) {
+       throw std::runtime_error("Invalid iterations argument. It must be an integer.\n");
+    }
+
+    return true;
+}
+
+bool validateArguments(std::map<std::string, std::string>& cmdArgs) {
+    const std::vector<std::string> requiredArgs = {"--model_path", "--img_path", "--iterations", "--model_family",
+    "--iou_thres","--conf_thres","--precision"};
+    
+    for (const auto& arg : requiredArgs) {
+        auto it = cmdArgs.find(arg);
+        if (it == cmdArgs.end() || it->second.empty()) {
+            throw std::runtime_error("Required argument missing or empty: " + arg);
+        }
+    }
+
+    // Check if model_binary_path file exists
+    std::ifstream model_file(cmdArgs["--model_path"]);
+    if (!model_file) {
+        throw std::runtime_error("Model binary file does not exist: " + cmdArgs["--model_path"]);
+    }
+
+    // Check if input_image_path file exists
+    std::ifstream img_file(cmdArgs["--img_path"]);
+    if (!img_file) {
+        throw std::runtime_error("Image file does not exist: " + cmdArgs["--img_path"]);
+    }
+
+
+    if (std::find(supported_models.begin(), supported_models.end(),cmdArgs["--model_family"]) == supported_models.end()) {
+    // Element not found
+       throw std::runtime_error("Invalid model type, supported: YOLO, MOBNETSSD, EFFICIENTDET, NANODET\n");
+    }
+
+    if (std::find(supported_precisions.begin(), supported_precisions.end(),cmdArgs["--precision"]) == supported_precisions.end()) {
+       throw std::runtime_error("Supported precisions: float32, float16 and int8 \n");
+    }
+
+    try {
+        std::stoi(cmdArgs["--iterations"]);
+    } catch (const std::exception& e) {
+       throw std::runtime_error("Invalid iterations argument. It must be an integer.\n");
+    }
+
+    try {
+        std::stof(cmdArgs["--conf_thres"]);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("Confidence threshold must be a float.");
+    }
+
+    try {
+        std::stof(cmdArgs["--iou_thres"]);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("IOU threshold must be a float.");
+    }
+
+
+    return true;
+}
+
+// Function to parse input arguments
+std::map<std::string, std::string> parseInput(int argc, char* argv[]) {
+    std::map<std::string, std::string> cmdArgs;
+
+    for (int i = 1; i < argc; i += 2) {
+        if (i + 1 < argc) { // Make sure we have a pair
+            std::string key(argv[i]);
+            if (key[0] == '-' && key[1] == '-') {
+                cmdArgs[key] = argv[i + 1];
+            } else {
+                std::cerr << "Invalid argument format: " << key << std::endl;
+                throw std::invalid_argument("Invalid argument format \n Usage program_name --model_path </path/to/modelLibrary.so> --img_path </path/to/imput image> --iterations <number of iterations> --model_family <model family> --iou_thres <iou threshold> --conf_thres <confidence threshold> --precision <precision>");
+            }
+        } else {
+            std::cerr << "Missing value for argument: " << argv[i] << std::endl;
+            throw std::invalid_argument("Missing argument value");
+        }
+    }
+
+    validateArguments(cmdArgs);
+
+    return cmdArgs;
+}
+
+std::map<std::string, std::string> parseClassifierInput(int argc, char* argv[]) {
+    std::map<std::string, std::string> cmdArgs;
+
+    for (int i = 1; i < argc; i += 2) {
+        if (i + 1 < argc) { // Make sure we have a pair
+            std::string key(argv[i]);
+            if (key[0] == '-' && key[1] == '-') {
+                cmdArgs[key] = argv[i + 1];
+            } else {
+                std::cerr << "Invalid argument format: " << key << std::endl;
+                throw std::invalid_argument("Invalid argument format \n Usage program_name --model_path </path/to/modelLibrary.so> --img_path </path/to/imput image> --iterations <number of iterations> --label_file <path/to/labelsfile> --precision <precision>");
+            }
+        } else {
+            std::cerr << "Missing value for argument: " << argv[i] << std::endl;
+            throw std::invalid_argument("Missing argument value");
+        }
+    }
+
+    validateClassifierArguments(cmdArgs);
+
+    return cmdArgs;
+}
 
 std::unordered_map<char, int> getLayoutDims(const std::string& layout, const std::string& shape) {
     std::unordered_map<char, int> layoutDims;

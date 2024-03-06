@@ -6,18 +6,22 @@
 # *****************************************************************************/
 
 #!/usr/bin/env python
-import os
-import torch as T
-import torchvision.transforms as transforms
-from PIL import Image
+
+# Ensure that the import statement matches the filename and class name
+from utils import utils 
+import json
+from pylre import LatentRuntimeEngine
+
+t_preprocessing = utils.Timer()
+t_inference = utils.Timer()
+t_postprocessing = utils.Timer()
 
 def main():
     from argparse import ArgumentParser
     from pathlib import Path
 
-    from pylre import LatentRuntimeEngine
-
     parser = ArgumentParser(description="Run inference")
+    parser.add_argument("--precision", type=str, default="float32", help="Set precision to run LRE.")
     parser.add_argument("--model_binary_path", type=str, default=".", help="Path to LRE object directory.")
     parser.add_argument(
         "--input_image_path",
@@ -31,6 +35,12 @@ def main():
         default="labels.txt",
         help="Path to labels text file.",
     )
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        default=10,
+        help="Iterations to average timing.",
+    )
 
     args = parser.parse_args()
 
@@ -39,87 +49,85 @@ def main():
     print(lre.get_metadata())
 
     # Set precision
-    use_fp16 = bool(int(os.getenv("TVM_TENSORRT_USE_FP16", 0)))
-    if use_fp16:
-        lre.set_model_precision("float16")
+    lre.set_model_precision(args.precision)
     
     # Read metadata from runtime
-    layout_shapes = get_layout_dims(lre.input_layouts, lre.input_shapes)
+    layout_shapes = utils.get_layout_dims(lre.input_layouts, lre.input_shapes)
     input_size = (layout_shapes[0].get('H'), layout_shapes[0].get('W'))
-    device = lre.device_type
+
+    config = utils.set_processor_configs(args.model_binary_path)
 
     # Load image
-    image = Image.open(args.input_image_path)
+    image = utils.load_image(args.input_image_path, config)
     
-    # Apply preprocess transformations
-    resize_transform = transforms.Resize(input_size)
-    resized_image = resize_transform(image)
-    normalize_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    resized_image_normalized = normalize_transform(resized_image)
+    # Warm up
+    # Is this needed for CPU?
+    lre.warm_up(10)
 
-    # Run inference
-    lre.infer(resized_image_normalized)
-    
-    # Post-process    
-    outputs = lre.get_outputs()
+    iterations = args.iterations
+
+    for i in range(iterations):
+        # Pre-process
+        t_preprocessing.start()
+        if config.use_albumentations_library:
+            resized_image_normalized = utils.preprocess_transforms_albumentations(image, args.model_binary_path)
+        else:
+            resized_image_normalized = utils.preprocess_transforms(image, input_size, config)
+        t_preprocessing.stop()
+
+        # Run inference
+        t_inference.start()
+        lre.infer(resized_image_normalized)
+        t_inference.stop()
+        
+        # Post-process    
+        outputs = lre.get_outputs()
+        output = outputs[0]
+        t_postprocessing.start()
+        op = utils.postprocess_top_one(output, config)
+        t_postprocessing.stop()
 
     # Visualize
-    output = outputs[0] 
-    output = T.from_dlpack(output)
-    op = postprocess_top_one(output)
-    print_top_one(op, args.labels)
+    label, score = utils.print_top_one(op, args.labels)
 
+    # Get the average elapsed time in milliseconds
+    average_preprocessing_time = t_preprocessing.averageElapsedMilliseconds()
+    std_dev_preprocessing = t_preprocessing.standardDeviationMilliseconds()
+    
+    average_inference_time = t_inference.averageElapsedMilliseconds()
+    std_dev_inference = t_inference.standardDeviationMilliseconds()
+    
+    average_postprocessing_time = t_postprocessing.averageElapsedMilliseconds()
+    std_dev_postprocessing = t_postprocessing.standardDeviationMilliseconds()
 
-def load_labels(path):
-    with open(path, "r") as f:
-        return f.read().strip().split("\n")
-    
-def postprocess_top_one(values):
-    values = T.nn.functional.softmax(values, dim=1)
-    max_index = T.argmax(values).item()
-    max_value = values[0][max_index]        
-    
-    top_one = (max_index, max_value )
-    return top_one
+    average_time = average_preprocessing_time + average_inference_time + average_postprocessing_time
 
-def print_top_one(top_one, label_file_name):
-    with open(label_file_name, 'r') as label_file:
-        lines = label_file.readlines()
-
-    if top_one[0] >= 0 and top_one[0] < len(lines):
-        label = lines[int(top_one[0])].strip()
-    else:
-        label = "Unknown Label"
-
-    print(" ------------------------------------------------------------ ")
-    print(" Detections ")
-    print(" ------------------------------------------------------------ ")
-    print(f" The image prediction result is: id {top_one[0]}")
-    print(f" Name: {label}")
-    print(f" Score: {top_one[1]}")
-    print(" ------------------------------------------------------------ ")
-    
-def get_layout_dims(layout_list, shape_list):
-    if len(layout_list) != len(shape_list):
-        raise ValueError("Both input lists should have the same number of elements.")
-    
-    result = []
-    
-    for i in range(len(layout_list)):
-        layout_str = layout_list[i]
-        shape_tuple = shape_list[i]
-        
-        if len(layout_str) != len(shape_tuple):
-            raise ValueError(f"Length of layout string does not match the number of elements in the shape tuple for input {i}.")
-        
-        layout_dict = {letter: number for letter, number in zip(layout_str, shape_tuple)}
-        result.append(layout_dict)
-    
-    return result
-
+    # Print the result
+    data = {
+        "UID": lre.model_id,
+        "Precision": lre.model_precision,
+        "Device": lre.device_type,
+        "Input Image Size": image.shape,
+        "Model Input Shapes": lre.input_shapes,
+        "Model Input Layouts": lre.input_layouts,
+        "Average Preprocessing Time ms": {
+            "Mean": utils.roundToDecimalPlaces(average_preprocessing_time, 3),
+            "std_dev": utils.roundToDecimalPlaces(std_dev_preprocessing, 3)
+        },
+        "Average Inference Time ms": {
+            "Mean": utils.roundToDecimalPlaces(average_inference_time, 3),
+            "std_dev": utils.roundToDecimalPlaces(std_dev_inference, 3)
+        },
+        "Average Total Postprocessing Time ms": {
+            "Mean": utils.roundToDecimalPlaces(average_postprocessing_time, 3),
+            "std_dev": utils.roundToDecimalPlaces(std_dev_postprocessing, 3)
+        },
+        "Total Time ms": utils.roundToDecimalPlaces(average_time, 3),
+        "Class": label,
+        "Score": score
+    }
+    json_text = json.dumps(data, indent=4)
+    print(json_text)
 
 if __name__ == "__main__":
     main()
