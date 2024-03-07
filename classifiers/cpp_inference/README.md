@@ -15,8 +15,7 @@ Refer to the provided `inference_commands.bash` script. This can be used as an e
 2. Copy the modelLibrary.so to the device.
 3. Run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <path/of/image> --iterations <number of iterations> -label_file <path/to/labels> ```
 4. Example ``` bash inference_commands.bash --model_path /workspace/classifier/x86_64_cuda/ --img_path ../../sample_images/bus.jpg --iterations 100 --label_file ../../labels/class_names_10.txt ```
-5. Output
-The script will provide a JSON-like output and will provide the following information:
+5. The script will provide a JSON-like output and will provide the following information:
 ``` json
 {
     "UID": "032ecf56-2389-495f-9740-af43c3c0ef68",
