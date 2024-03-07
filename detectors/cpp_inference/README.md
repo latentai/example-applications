@@ -5,15 +5,15 @@ This folder contains a sample project for image detector models.  This example s
 - DLDevice: CPU or CUDA
 - LRE object: C++
 - Model precisions: INT8, FP32, FP16
-- One input image (e.g. JPG)
+- One input image (e.g., JPG)
 
 ## Quick Start
 
-See the provided `inference_commands.bash` script.  This can be used as an example to run FP32, FP16, and INT8 versions of a model. Run the following steps to use this script:
+Refer to the provided `inference_commands.bash` script. This can be used as an example to run FP32, FP16, and INT8 versions of a model. Run the following steps to use this script:
 
-### 1. Make the device ready
+### 1. Make the Device Ready
 Install the device dependencies. [Use the appropriate scripts for your device](../../setup_scripts)
-### 2. Make the model available
+### 2. Make the Model Available
 Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler Framework have the following structure (e.g., model_name=efficentdet, architecture=aarch64_cuda_xavier_jp4):
 ```
 <model_name>/
@@ -37,13 +37,13 @@ Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler F
     └── results.json
 ```
 
-The bash script handles the running of the three supported precisions. This is donbe automatically if you set the MODEL_PATH:
+The bash script handles the running of the three supported precisions. This is done automatically if you set the MODEL_PATH:
 ```bash
 MODEL_PATH=<path_to_model_name>
 ```
 Or you can set the path to model compiled for FP32 or INT8 only.
 
-### 3. Run for three precisions using the inference_commands.bash script
+### 3. Run for Three Precisions Using the inference_commands.bash Ccript
 run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <path/of/image> --iterations <number of iterations> --model_family <model family> --conf_thres <confidence threshold> --iou_thres <iou threshold> ```
 ### 4. Example 
 ``` bash 
@@ -63,9 +63,9 @@ The script will provide a table showing the box coordinates, the score, and clas
  112.7287  345.0817  146.8491  377.6378    0.7854    1.0000
 [ CUDAFloatType{2,6} ]
 -----------------------------------------------------------
-Writing annotated image to /home/dev/example_applications/sample_images/road314_March_01_2024_22:54:05_out.jpg
+Write the annotated image to /home/dev/example_applications/sample_images/road314_March_01_2024_22:54:05_out.jpg
 ```
-AND a json-like output containing the timings calculated:
+A JSON-like output containing the timings will be calculated:
 ```json
 {
   “Average Inference Time ms”: {
@@ -95,11 +95,11 @@ AND a json-like output containing the timings calculated:
 - OpenCV
 - LatentAI Runtime Engine (LRE)
 - Torch
-- Torchvision (Optional, Recommended for optimum post processing on GPU Targets)
+- Torchvision (optional; recommended for optimum post processing on GPU Targets)
 
 
 ## Building the Project Directly
-If you would prefer to build and use the example application directly without the `inference_commands.bash` script, you will follow these basic steps:
+The bash script handles the running of the three supported precisions. This is done automatically if you set the MODEL_PATH: The bash script handles the running of the three supported precisions. This is done automatically if you set the MODEL_PATH:If you would prefer to build and use the example application directly without the `inference_commands.bash` script
 
 Building the application:<br>
 ```
@@ -109,8 +109,7 @@ cmake ..
 make -j$(nproc)
 ```
 
-The generated binary will be placed in the *bin* folder with the name of **application**
-you can then run this binary(inference) giving the following inputs for 100 test iterations  (We recommend running at least 100 iterations if you are looking for accurate timing information):
+The generated binary will be placed in the *bin* folder with the name of **application**. This binary(inference) can be run giving the following inputs for 100 test iterations. We recommend running at least 100 iterations if you are looking for accurate timing information:
 
 ```
 path to binary               - bin/application
@@ -123,7 +122,7 @@ iou threshold                - 0.45
 precision                    -float32,float16,int8   
 ```
 <br>
-For example, the inference command for Float32 would be:
+For example, the inference command for Float32 will be:
 
 ```
 bin/application --model_path /workspace/yolov5/x86_64_cuda/Float32-compile/modelLibrary.so 
