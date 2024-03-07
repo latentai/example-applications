@@ -1,12 +1,12 @@
 # LatentAI LRE - Classifier Inference Python example 
 
-This folder contains a Python script that employs the LRE model to run an inference example. Perform the following to run this inference example: 
+This folder contains a Python script that employs the LRE model to run an inference example. Perform the following steps to run this inference example: 
 
 1. Install the dependencies on your device. [Use the appropriate scripts for your device](../../setup_scripts)
-2. Install the LatentAI runtime engine (`pylre`) by `sudo apt install pylre` in the device.
+2. Install the LatentAI Runtime Engine (`pylre`) by `sudo apt install pylre` in the device.
 3. Send the `model_binary_path`, `input_image_path` and `labels` to run [script](infer.py) `python3 infer.py`. 
 5. Output
-Currently the script will provide a json-like output providing the following information:
+Currently the script will provide a JSON-like output providing the following information:
 ``` json
 {
     "UID": "032ecf56-2389-495f-9740-af43c3c0ef68",
