@@ -6,15 +6,15 @@ This folder contains a python script that employs the LRE (LatentAI Runtime Engi
 - DLDevice: CPU or CUDA
 - LRE object: C++
 - Model precisions: INT8, FP32, FP16
-- One input image (e.g.jpg)
+- One input image (e.g., jpg)
 
-To run this inference example, do the following:
+Perfom the following steps to run this example:
 
 ### 1. Make the device ready
 Install the dependencies on your device. [Use the appropriate scripts for your device](../../setup_scripts)
 
 ### 2. Make the model available 
-Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler Framework have the following structure (e.g. model_name=efficentdet, architecture=aarch64_cuda_xavier_jp4):
+Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler Framework have the following structure (e.g., model_name=efficentdet, architecture=aarch64_cuda_xavier_jp4):
 ```
 <model_name>/
 │
