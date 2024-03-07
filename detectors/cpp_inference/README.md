@@ -1,5 +1,5 @@
 # LatentAI LRE - Detector Inference C++ example 
-This folder contains a sample project for image detector models.  This example supports the following:
+This folder contains a sample project for image detector models. This example supports the following:
 
 - Model(s): [LEIP Compiler Framework](https://leipdocs.latentai.io/cf/3.0/content/) compiled detectors
 - DLDevice: CPU or CUDA
@@ -99,7 +99,12 @@ A JSON-like output containing the timings will be calculated:
 
 
 ## Building the Project Directly
-The bash script handles the running of the three supported precisions. This is done automatically if you set the MODEL_PATH: The bash script handles the running of the three supported precisions. This is done automatically if you set the MODEL_PATH:If you would prefer to build and use the example application directly without the `inference_commands.bash` script
+The bash script handles the running of the three supported precisions. This is done automatically if you set the MODEL_PATH:
+```bash
+MODEL_PATH=<path_to_model_name>
+```
+In addition, you can set the path to model compiled for FP32 or INT8 only.
+
 
 Building the application:<br>
 ```
