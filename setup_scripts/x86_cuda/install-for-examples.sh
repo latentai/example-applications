@@ -4,14 +4,14 @@ if [ ! -f /etc/apt/sources.list.d/latentai-stable.list ]; then
     echo "Error: Add latentai apt repo before running this script."
     echo ""
     echo "Example:"
-    echo " wget -qO - https://public.latentai.io/add_apt_repository | sudo bash"
-    echo " sudo apt update"
+    echo " wget -qO - https://public.latentai.io/add_apt_repository | bash"
+    echo " apt update"
     exit
 fi
 
 apt update
 
-sudo apt install pylre
+apt install -y pylre
 
 apt install -y libopencv-dev
 apt install -y libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev
