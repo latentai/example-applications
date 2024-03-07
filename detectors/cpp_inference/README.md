@@ -50,11 +50,11 @@ run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <
 inference_commands.bash --model_path /workspace/yolov8/x86_64_cuda/ --img_path ../../sample_images/bus.jpg --iterations 100 --model_family YOLO --conf_thres 0.5 --iou_thres 0.45 
 ```
 
-If you are only targeting C++, you may not wish to install everything in those setup scripts, but you may wish to use them for reference.
+You may not need to install everything in those setup scripts if you are only targeting C++. However, you may wish to use the scripts for references.
 The critical dependencies for the C++ examples are listed below.
 
 ### 5. Output
-Currently the script will provide a table showing the box coordinates, the score and class for the detections. The annotated image will only contain boxes and the classes will not be printed in the image.
+The script will provide a table showing the box coordinates, the score, and class for the detections. The annotated image will only contain boxes and the classes will not be printed in the image.
 ```bash
 -----------------------------------------------------------
                      Box                   Score     Class
