@@ -9,12 +9,12 @@ This folder contains a sample project for image detector models.  This example s
 
 ## Quick Start
 
-See the provided `inference_commands.bash` script.  This can be used as an example to run FP32, FP16 and INT8 versions of a model.  To use this script:
+See the provided `inference_commands.bash` script.  This can be used as an example to run FP32, FP16, and INT8 versions of a model. Run the following steps to use this script:
 
 ### 1. Make the device ready
-Install the device dependencies.  [Use the appropriate scripts for your device](../../setup_scripts)
+Install the device dependencies. [Use the appropriate scripts for your device](../../setup_scripts)
 ### 2. Make the model available
-Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler Framework have the following structure (e.g. model_name=efficentdet, architecture=aarch64_cuda_xavier_jp4):
+Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler Framework have the following structure (e.g., model_name=efficentdet, architecture=aarch64_cuda_xavier_jp4):
 ```
 <model_name>/
 │
@@ -37,11 +37,11 @@ Copy the modelLibrary.so to the device. Models compiled with the LEIP Compiler F
     └── results.json
 ```
 
-The bash script handles running the three supported precisions, automatically if you set the MODEL_PATH:
+The bash script handles the running of the three supported precisions. This is donbe automatically if you set the MODEL_PATH:
 ```bash
 MODEL_PATH=<path_to_model_name>
 ```
-or you can set the path to model compiled for FP32 or INT8 only.
+Or you can set the path to model compiled for FP32 or INT8 only.
 
 ### 3. Run for three precisions using the inference_commands.bash script
 run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <path/of/image> --iterations <number of iterations> --model_family <model family> --conf_thres <confidence threshold> --iou_thres <iou threshold> ```
