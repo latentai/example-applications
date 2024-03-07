@@ -9,14 +9,14 @@ This folder contains a sample project for image classifier models.  This example
 
 ## Quick Start
 
-See the provided `inference_commands.bash` script. This can be used as an example to run FP32, FP16, and INT8 versions of a model. Perform the following to use this script:
+Refer to the provided `inference_commands.bash` script. This can be used as an example to run FP32, FP16, and INT8 versions of a model. Run the following steps to use this script:
 
 1. Install the device dependencies.  [Use the appropriate scripts for your device.](../../setup_scripts)
 2. Copy the modelLibrary.so to the device.
-3. run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <path/of/image> --iterations <number of iterations> -label_file <path/to/labels> ```
+3. Run  ``` bash inference_commands.bash --model_path </path/to/model> --img_path <path/of/image> --iterations <number of iterations> -label_file <path/to/labels> ```
 4. Example ``` bash inference_commands.bash --model_path /workspace/classifier/x86_64_cuda/ --img_path ../../sample_images/bus.jpg --iterations 100 --label_file ../../labels/class_names_10.txt ```
 5. Output
-Currently the script will provide a json-like output providing the following information:
+The script will provide a JSON-like output and will provide the following information:
 ``` json
 {
     "UID": "032ecf56-2389-495f-9740-af43c3c0ef68",
@@ -56,7 +56,7 @@ Currently the script will provide a json-like output providing the following inf
 }
 ```
 
-If you are only targeting C++, you may not wish to install everything in those setup scripts. However, you may wish to use them for references.
+You may not need to install everything in those setup scripts if you are only targeting C++. However, you may wish to use the scripts for references.
 The critical dependencies for the C++ examples are listed below.
 
 
