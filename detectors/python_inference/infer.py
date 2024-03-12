@@ -10,6 +10,8 @@
 # Ensure that the import statement matches the filename and class name
 from utils import utils 
 import json
+import os
+import sys
 from pylre import LatentRuntimeEngine
 
 t_preprocessing = utils.Timer()
@@ -115,19 +117,18 @@ def main():
 
         # Post-process  
         t_postprocessing.start()
-        # postprocessor_path = Path(args.model_binary_path) / "processors" / "general_detection_postprocessor.py"
-        # if os.path.exists(postprocessor_path):
-        #     import sys
-        #     postprocessor_path = postprocessor_path.resolve()
-        #     postprocessor_path = str(postprocessor_path.parents[0])
-        #     sys.path.append(postprocessor_path)
-        #     from general_detection_postprocessor import postprocess
-        #     import torch as T
-        #     output_torch = T.from_dlpack(output)
-        #     output = postprocess(output_torch, max_det_per_image=args.maximum_detections, prediction_confidence_threshold=args.confidence_threshold, iou_threshold=args.iou_threshold, convert_coco80_to_coco91=False, height=transformed_image.shape[1], width=transformed_image.shape[2])
-        # else:
-        output = detector_postprocessor.postprocess(output, max_det_per_image=args.maximum_detections, prediction_confidence_threshold=args.confidence_threshold, iou_threshold=args.iou_threshold, config=config)
-        t_postprocessing.stop()
+        postprocessor_path = Path(args.model_binary_path) / "processors" / "general_detection_postprocessor.py"
+        if os.path.exists(postprocessor_path):
+            postprocessor_path = postprocessor_path.resolve()
+            postprocessor_path = str(postprocessor_path.parents[0])
+            sys.path.append(postprocessor_path)
+            from general_detection_postprocessor import post_process
+            import torch as T
+            output_torch = T.from_dlpack(output)
+            output = post_process(output_torch, max_det_per_image=args.maximum_detections, prediction_confidence_threshold=args.confidence_threshold, iou_threshold=args.iou_threshold)
+        else:
+            output = detector_postprocessor.postprocess(output, max_det_per_image=args.maximum_detections, prediction_confidence_threshold=args.confidence_threshold, iou_threshold=args.iou_threshold, config=config)
+            t_postprocessing.stop()
     
     # Visualize
     output_image = utils.plot_boxes(sized_image, output, labels)
