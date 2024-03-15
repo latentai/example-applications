@@ -1,21 +1,18 @@
 # Example Application - Dependency Install Scripts for Raspberry Pi 4B
-This directory includes several scripts for setting up Raspberry Pi 4B devices to use the example applications in this repo.
+This directory includes a script for setting up Raspberry Pi 4B devices to use the example applications in this repo.
 
 The following are the recommended steps to using these install scripts:
 
-1. Start with a fresh install of the OS on your Raspberry Pi.  We have tested these scripts and applications with *Raspberry Pi 64-bit OS*
+1. Start with a fresh install of the OS on your Raspberry Pi.  We currently only support *Raspberry Pi Bullseye 64-bit OS (Debian 11)*
 2. Add the Latent AI apt server:<br>
 `wget -qO - https://public.latentai.io/add_apt_repository | sudo bash`
-3. Run the LOR dependency install script:<br>
-`install-lor-deps.sh`
-4. Copy the appropriate LOR server from the LEIP Compiler Framework `/latentai/packages/` directory to the target device.  The Python3.8 version of the LOR works with the default Python3.9 provided by the OS.
-5. Install the LOR using:<br>
-`pip3 install <LOR.whl file>`
-7. Install the additional dependencies for the example applications using:<br>
-`./install-for-examples.sh`
+3. Run the install script:<br>
+`install-for-bullseye.sh`
+4. Install the LOR Server (`leip-lor`) as instructed in the [LEIP Documentation](https://leipdocs.latentai.io/cf/3.0/content/modules/lor/) if you are intending to run the `lor_server` for remote use of *leip evaluate*<br>
+
 
 ## Customizing this process
-The above install scripts are intended as examples.  It is suggested that you
+The above install script is intended as an example.  It is suggested that you
 follow the above install process during your evaluation phase with LEIP Recipes.
 
 
